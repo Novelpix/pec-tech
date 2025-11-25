@@ -2625,6 +2625,20 @@ deleteEquipmentFromSupabase(idToDelete)
           return;
         }
 
+// === Activation des boutons "Ajouter un équipement" ===
+document.getElementById('btnAddEquipment').onclick = () => {
+  AppState.editingEquipmentId = null;
+  resetEquipmentForm();
+  showScreen('equipmentForm');
+};
+
+document.getElementById('fabAddEquipment').onclick = () => {
+  AppState.editingEquipmentId = null;
+  resetEquipmentForm();
+  showScreen('equipmentForm');
+};
+
+          
         equipments.forEach((equipment) => {
           const card = document.createElement('div');
           card.className = 'equipment-card';

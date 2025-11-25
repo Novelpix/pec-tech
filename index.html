@@ -1126,6 +1126,44 @@
     </button>
   </div>
 </div>
+<!-- ÉCRAN : FORMULAIRE ÉQUIPEMENT -->
+<div id="equipmentForm" class="screen">
+  <div class="header">
+    <button class="nav-button" onclick="showScreen('equipmentList')">⬅️ Retour</button>
+    <h1 id="formTitle">Nouvel équipement</h1>
+  </div>
+
+  <form id="equipmentFormElement" style="padding: 20px;">
+
+    <label>Type d’équipement</label>
+    <select id="equipmentType" required></select>
+
+    <label>Code équipement</label>
+    <input id="equipmentCode" type="text" placeholder="Code" />
+
+    <label>Marque / Modèle</label>
+    <input id="equipmentMarque" type="text" placeholder="Marque" />
+
+    <label>État visuel (EV)</label>
+    <select id="equipmentEV">
+      <option value="0">🔴 Critique</option>
+      <option value="1">🟠 Mauvais</option>
+      <option value="2">🟡 Moyen</option>
+      <option value="3">🟢 Bon</option>
+      <option value="4">🔵 Neuf</option>
+    </select>
+
+    <label>Remarques</label>
+    <textarea id="equipmentRemarks" rows="4"></textarea>
+
+    <div style="text-align:center; margin-top: 20px;">
+      <button class="btn btn-primary" type="button" onclick="saveEquipment()">💾 Enregistrer</button>
+    </div>
+
+  </form>
+</div>
+
+          
           
           <div class="header" style="position: relative">
           <button class="nav-button" id="btnRetourLots">← Accueil</button>

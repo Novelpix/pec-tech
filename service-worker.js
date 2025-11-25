@@ -1,0 +1,1 @@
+// Basic service worker placeholder

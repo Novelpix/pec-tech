@@ -1,0 +1,4638 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2c5aa0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="PEC Tech 100%">
+  <title>PEC Tech - Relevés Terrain 100% Conformes</title>
+  <!-- Bibliothèques pour exports -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Supabase client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.48.0/dist/umd/supabase.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .app-container {
+      min-height: 100vh;
+      background: white;
+    }
+
+    .screen {
+      display: none;
+      min-height: 100vh;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .header {
+      background: #2c5aa0;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .nav-button {
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .nav-button:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .content {
+      padding: 30px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .btn {
+      display: inline-block;
+      min-height: 50px;
+      padding: 15px 25px;
+      font-size: 16px;
+      font-weight: 500;
+      text-align: center;
+      text-decoration: none;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      line-height: 1.4;
+      min-width: 160px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn-primary {
+      background: #2c5aa0;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1e3f73;
+      transform: translateY(-2px);
+    }
+
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #1e7e34;
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #5a6268;
+      transform: translateY(-2px);
+    }
+
+    .btn-warning {
+      background: #ffc107;
+      color: #212529;
+    }
+
+    .btn-warning:hover {
+      background: #e0a800;
+    }
+
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #c82333;
+      transform: translateY(-2px);
+    }
+
+    .btn-small {
+      padding: 8px 12px;
+      font-size: 14px;
+      margin-left: 10px;
+      min-height: auto;
+      min-width: auto;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .stat-card {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 25px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .stat-number {
+      font-size: 36px;
+      font-weight: bold;
+      color: #2c5aa0;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #6c757d;
+      font-weight: 500;
+    }
+
+    .progress-bar {
+      background: #e9ecef;
+      border-radius: 10px;
+      height: 25px;
+      margin: 20px 0;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      background: linear-gradient(90deg, #28a745, #20c997);
+      height: 100%;
+      transition: width 0.8s ease;
+      border-radius: 10px;
+    }
+
+    .lots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .lot-card {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .lot-card:hover {
+      border-color: #2c5aa0;
+      transform: translateY(-5px);
+      box-shadow: 0 8px 24px rgba(44, 90, 160, 0.12);
+    }
+
+    .lot-card.completed {
+      border-color: #28a745;
+      background: linear-gradient(135deg, #d4edda, #f8f9fa);
+    }
+
+    .lot-card.in-progress {
+      border-color: #ffc107;
+      background: linear-gradient(135deg, #fff3cd, #f8f9fa);
+    }
+
+    .lot-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .lot-progress {
+      font-size: 14px;
+      color: #6c757d;
+      margin-bottom: 10px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .badge-success {
+      background: #28a745;
+      color: white;
+    }
+
+    .badge-primary {
+      background: #007bff;
+      color: white;
+    }
+
+    .badge-warning {
+      background: #ffc107;
+      color: #212529;
+    }
+
+    .badge-secondary {
+      background: #6c757d;
+      color: white;
+    }
+
+    .equipment-list {
+      margin: 30px 0;
+    }
+
+    .equipment-card {
+      background: white;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .equipment-card:hover {
+      border-color: #2c5aa0;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .equipment-info h3 {
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .equipment-details {
+      font-size: 14px;
+      color: #6c757d;
+    }
+
+    .form-container {
+      background: white;
+      border-radius: 10px;
+      padding: 30px;
+      margin: 20px 0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-section {
+      margin: 30px 0;
+      padding: 25px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #2c5aa0;
+    }
+
+    .form-section h3 {
+      color: #2c5aa0;
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+
+    .form-section h4 {
+      margin: 20px 0 15px 0;
+      font-size: 16px;
+    }
+
+    .form-group {
+      margin: 20px 0;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e9ecef;
+      border-radius: 5px;
+      font-size: 16px;
+      transition: border-color 0.2s ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #2c5aa0;
+    }
+
+    input[readonly] {
+      background-color: #e9ecef;
+      font-weight: bold;
+    }
+
+    small {
+      font-size: 12px;
+      color: #6c757d;
+      display: block;
+      margin-top: 5px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .form-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 15px;
+    }
+
+    .radio-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .radio-option {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .radio-option:hover {
+      border-color: #2c5aa0;
+    }
+
+    .radio-option.selected {
+      border-color: #2c5aa0;
+      background: #e3f2fd;
+    }
+
+    .radio-option.ev-0 {
+      border-color: #dc3545;
+    }
+
+    .radio-option.ev-1 {
+      border-color: #fd7e14;
+    }
+
+    .radio-option.ev-2 {
+      border-color: #ffc107;
+    }
+
+    .radio-option.ev-3 {
+      border-color: #28a745;
+    }
+
+    .radio-option.ev-4 {
+      border-color: #20c997;
+    }
+
+    .radio-option.crit-u {
+      border-color: #dc3545;
+    }
+
+    .radio-option.crit-i {
+      border-color: #fd7e14;
+    }
+
+    .radio-option.crit-a {
+      border-color: #ffc107;
+    }
+
+    .radio-option.crit-s {
+      border-color: #28a745;
+    }
+
+    .radio-option.type-c {
+      border-color: #6610f2;
+    }
+
+    .radio-option.type-f {
+      border-color: #dc3545;
+    }
+
+    .radio-option.type-v {
+      border-color: #fd7e14;
+    }
+
+    .radio-option.type-s {
+      border-color: #e83e8c;
+    }
+
+    .radio-option.type-m {
+      border-color: #6c757d;
+    }
+
+    .radio-option.budget-a {
+      border-color: #28a745;
+    }
+
+    .radio-option.budget-b {
+      border-color: #20c997;
+    }
+
+    .radio-option.budget-c {
+      border-color: #ffc107;
+    }
+
+    .radio-option.budget-d {
+      border-color: #fd7e14;
+    }
+
+    .radio-option.budget-e {
+      border-color: #dc3545;
+    }
+
+    .checkbox-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      background: white;
+      border: 1px solid #e9ecef;
+      border-radius: 5px;
+    }
+
+    .checkbox-item input[type='checkbox'] {
+      width: auto;
+      margin-right: 10px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin: 40px 0;
+      padding: 20px 0;
+      border-top: 1px solid #e9ecef;
+    }
+
+    .breadcrumb {
+      background: #e9ecef;
+      padding: 10px 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .breadcrumb a {
+      color: #2c5aa0;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+    }
+
+    .offline-banner {
+      background: #ffc107;
+      color: #000;
+      padding: 10px;
+      text-align: center;
+      font-weight: bold;
+      display: none;
+    }
+
+    .footer {
+      background: #333;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* === NOUVEAUTÉS 100% CONFORMITÉ === */
+
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .photo-item {
+      position: relative;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      overflow: hidden;
+      aspect-ratio: 1;
+    }
+
+    .photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .photo-remove {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .priority-display {
+      text-align: center;
+      padding: 30px;
+      background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+      border-radius: 10px;
+    }
+
+    .priority-score {
+      font-size: 48px;
+      font-weight: bold;
+      color: #2c5aa0;
+    }
+
+    .priority-label {
+      font-size: 20px;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    /* === FLOATING ACTION BUTTON (FAB) === */
+    .fab {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #28a745, #20c997);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 32px;
+      font-weight: 300;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .fab:hover {
+      transform: scale(1.1) rotate(90deg);
+      box-shadow: 0 8px 25px rgba(40, 167, 69, 0.6);
+    }
+
+    .fab:active {
+      transform: scale(0.95) rotate(90deg);
+    }
+
+    .fab-icon {
+      line-height: 1;
+    }
+
+    /* === TOAST NOTIFICATIONS === */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: #333;
+      color: white;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      font-size: 15px;
+      animation:
+        slideUp 0.3s ease,
+        fadeOut 0.3s ease 2.7s;
+      pointer-events: auto;
+      min-width: 300px;
+      text-align: center;
+    }
+
+    .toast.success {
+      background: #28a745;
+    }
+
+    .toast.error {
+      background: #dc3545;
+    }
+
+    .toast.info {
+      background: #2c5aa0;
+    }
+
+    .toast.warning {
+      background: #ffc107;
+      color: #000;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+    }
+
+    /* === RIPPLE EFFECT === */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.6);
+      transform: scale(0);
+      animation: rippleEffect 0.6s ease-out;
+      pointer-events: none;
+    }
+
+    @keyframes rippleEffect {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 768px) {
+      .content {
+        padding: 20px;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .lots-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-row,
+      .form-row-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .radio-group {
+        grid-template-columns: 1fr;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+        margin: 5px 0;
+      }
+
+      .fab {
+        bottom: 20px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        font-size: 28px;
+      }
+
+      .checkbox-group {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="offline-banner" id="offlineBanner">
+    📱 Mode hors ligne - Les données seront synchronisées à la reconnexion
+  </div>
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="app-container">
+    <!-- ÉCRAN 1: DASHBOARD -->
+    <div id="dashboard" class="screen active">
+      <div class="header" style="position: relative">
+        <h1>🏗️ PEC Tech - Conformité 100%</h1>
+        <div style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%)">
+          <span id="onlineStatus">🟢</span>
+        </div>
+      </div>
+
+      <div class="content">
+        <h2 style="text-align: center; color: #2c5aa0; margin-bottom: 30px">PEC La Défense - 21 000 m²</h2>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-number" id="lotsInProgress">16 / 16</div>
+            <div class="stat-label">Lots en cours</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="lotsCompleted">0 / 16</div>
+            <div class="stat-label">Lots terminés</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="equipmentCount">0</div>
+            <div class="stat-label">Équipements saisis</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="photoCount">0</div>
+            <div class="stat-label">Photos prises</div>
+          </div>
+        </div>
+
+        <div class="progress-bar">
+          <div class="progress-fill" id="globalProgress" style="width: 0%;"></div>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0">
+          <button class="btn btn-secondary" id="btnExports" style="margin: 5px;">📊 Import-Export</button>
+          <button class="btn btn-secondary" id="btnJournalVisite" style="margin: 5px;">📝 Journal de Visite</button>
+          <button class="btn btn-secondary" id="btnSyntheseKpis" style="margin: 5px;">📊 Synthèse & KPIs</button>
+        </div>
+
+        <h3 style="color: #333; margin: 30px 0 20px 0">📋 Aperçu des lots techniques :</h3>
+        <div id="lotsList" class="lots-grid"></div>
+      </div>
+    </div>
+
+    <!-- ÉCRAN 2: LISTE ÉQUIPEMENTS -->
+    <div id="equipmentList" class="screen">
+      <div class="header" style="position: relative">
+        <button class="nav-button" id="btnRetourLots">← Accueil</button>
+        <h1 id="currentLotTitle">Structure / GO</h1>
+      </div>
+
+      <div class="content">
+        <div class="breadcrumb">
+          <a id="breadcrumbHome2">Accueil</a> &gt;
+          <span id="breadcrumbCurrentLot">Structure / GO</span>
+        </div>
+
+        <div style="text-align: center; margin: 20px 0">
+          <button class="btn btn-success" id="btnAddEquipment">➕ Ajouter un équipement</button>
+          <button class="btn btn-primary" id="btnMarkLotComplete" style="margin-left: 15px">✅ Marquer le lot comme
+            terminé</button>
+        </div>
+
+        <!-- FAB (Floating Action Button) -->
+        <button class="fab" id="fabAddEquipment" title="Ajouter un équipement">
+          <span class="fab-icon">+</span>
+        </button>
+
+        <div id="equipmentGrid" class="equipment-list"></div>
+      </div>
+    </div>
+
+    <!-- ÉCRAN 3: FORMULAIRE ÉQUIPEMENT 100% CONFORME -->
+    <div id="equipmentForm" class="screen">
+      <div class="header" style="position: relative">
+        <button class="nav-button" id="btnRetourEquipments">← Retour</button>
+        <h1>Relevé équipement - 100% Conforme</h1>
+      </div>
+
+      <div class="content">
+        <div class="form-container">
+          <form id="equipForm">
+            <!-- Section 1: Localisation (Toujours visible) -->
+            <div class="form-section">
+              <h3>📍 Projet & Localisation</h3>
+
+              <div class="form-group">
+                <label>Projet :</label>
+                <input type="text" id="formProjet" value="PEC La Défense - 21 000 m²" readonly>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Date visite :</label>
+                  <input type="date" id="formDate">
+                </div>
+                <div class="form-group">
+                  <label>Technicien :</label>
+                  <input type="text" id="formTechnicien" placeholder="Nom du technicien">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Heure début :</label>
+                  <input type="time" id="formHeureDebut">
+                </div>
+                <div class="form-group">
+                  <label>Heure fin :</label>
+                  <input type="time" id="formHeureFin">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Entreprise :</label>
+                  <input type="text" id="formEntreprise" placeholder="Nom de l'entreprise">
+                </div>
+                <div class="form-group">
+                  <label>Contact sur site :</label>
+                  <input type="text" id="formContactSite" placeholder="Référent sur site">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Téléphone référent :</label>
+                  <input type="tel" id="formTelReferent" placeholder="Ex: 06 12 34 56 78">
+                </div>
+                <div class="form-group">
+                  <label>Conditions météo :</label>
+                  <select id="formMeteo">
+                    <option value="">Sélectionner...</option>
+                    <option value="sec">☀️ Sec</option>
+                    <option value="pluie">🌧️ Pluie</option>
+                    <option value="neige">❄️ Neige</option>
+                    <option value="vent">💨 Vent fort</option>
+                    <option value="autre">⛅ Autre</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Type de visite :</label>
+                <select id="formTypeVisite">
+                  <option value="">Sélectionner...</option>
+                  <option value="initiale">🔍 Initiale PEC</option>
+                  <option value="complementaire">➕ Complémentaire</option>
+                  <option value="specifique">🎯 Relevés spécifiques</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Lot technique :</label>
+                <input type="text" id="formLot" readonly style="background-color: #e9ecef; font-weight: bold">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Niveau/Étage :</label>
+                  <input type="text" id="formNiveau" placeholder="Ex: R+2, R-1">
+                </div>
+                <div class="form-group">
+                  <label>Local/Zone :</label>
+                  <input type="text" id="formLocal" placeholder="Ex: Chaufferie Nord">
+                </div>
+              </div>
+
+              <button type="button" class="btn btn-secondary" id="btnGPS">📍 Capturer GPS</button>
+              <div id="gpsInfo" style="margin-top: 10px; font-size: 14px; color: #6c757d"></div>
+            </div>
+
+            <!-- Section 2: Identification ÉTENDUE (100% Conforme) -->
+            <div class="form-section">
+              <h3>🔧 Identification</h3>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Type élément/équipement :</label>
+                  <select id="formType"></select>
+                  <input type="text" id="formTypeAutre" placeholder="Préciser le type..."
+                    style="display: none; margin-top: 10px;">
+                </div>
+                <div class="form-group">
+                  <label>Code unique :</label>
+                  <input type="text" id="formCode" readonly placeholder="Auto-généré">
+                </div>
+              </div>
+
+              <!-- NOUVEAUTÉ 100% : QR Code, DOE, Plan -->
+              <div class="form-row">
+                <div class="form-group">
+                  <label>QR Code / NFC :</label>
+                  <div style="display: flex; align-items: center">
+                    <input type="text" id="formQRCode" placeholder="Scanner ou saisir" style="flex: 1">
+                    <button type="button" class="btn-small" onclick="scanQRCode()">📷 Scanner</button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Référence DOE :</label>
+                  <input type="text" id="formRefDOE" placeholder="Ex: DOE-2024-001">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Référence plan :</label>
+                <input type="text" id="formRefPlan" placeholder="Ex: PLAN-CVC-R+2">
+              </div>
+
+              <!-- Champs équipements mécaniques -->
+              <div id="mechanical-fields" class="hidden">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Marque :</label>
+                    <input type="text" id="formMarque" placeholder="Ex: Viessmann">
+                  </div>
+                  <div class="form-group">
+                    <label>Modèle :</label>
+                    <input type="text" id="formModele" placeholder="Ex: Vitocrossal 300">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>N° série :</label>
+                  <input type="text" id="formSerie" placeholder="N° série ou scan QR">
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Puissance :</label>
+                    <input type="number" id="formPuissance" placeholder="500">
+                  </div>
+                  <div class="form-group">
+                    <label>Unité :</label>
+                    <select id="formUnite">
+                      <option value="kW">kW</option>
+                      <option value="kVA">kVA</option>
+                      <option value="CV">CV</option>
+                      <option value="m³/h">m³/h</option>
+                      <option value="L">L</option>
+                      <option value="bar">bar</option>
+                      <option value="°C">°C</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Année fabrication :</label>
+                  <input type="number" id="formAnnee" min="1950" max="2030" placeholder="2022">
+                </div>
+              </div>
+
+              <!-- Champs éléments structurels -->
+              <div id="structural-fields" class="hidden">
+                <h4 style="color: #2c5aa0; margin: 20px 0 15px 0">🔍 Constats visuels</h4>
+                <div class="checkbox-group">
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="constat-ras" value="RAS">
+                    <label for="constat-ras">RAS (Rien à signaler)</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="constat-fissures" value="Fissures">
+                    <label for="constat-fissures">Fissures / microfissures</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="constat-infiltration" value="Infiltration">
+                    <label for="constat-infiltration">Traces d'infiltration / humidité</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="constat-corrosion" value="Corrosion">
+                    <label for="constat-corrosion">Corrosion apparente</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="constat-degradation" value="Dégradation">
+                    <label for="constat-degradation">Dégradation générale</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="constat-joints" value="Joints">
+                    <label for="constat-joints">Joints dégradés</label>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Détails des constats :</label>
+                  <textarea id="formConstatsDetails" rows="3"
+                    placeholder="Décrire précisément les anomalies constatées..."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- NOUVEAUTÉ 100% : Photos & Documents -->
+            <div class="form-section">
+              <h3>📷 Photos & Documents</h3>
+
+              <div class="form-group">
+                <label>Ajouter des photos :</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                  <button type="button" class="btn btn-primary" onclick="takePhoto()" style="flex: 1;">
+                    📸 Prendre une photo
+                  </button>
+                  <button type="button" class="btn btn-secondary"
+                    onclick="document.getElementById('formPhotos').click()" style="flex: 1;">
+                    📁 Sélectionner fichiers
+                  </button>
+                </div>
+                <input type="file" id="formPhotos" multiple accept="image/*" style="display: none;">
+                <input type="file" id="formPhotoCamera" accept="image/*" capture="environment" style="display: none;">
+                <small>Formats acceptés : JPG, PNG, HEIC | Max 10 photos</small>
+              </div>
+
+              <div id="photoPreview" class="photo-grid"></div>
+            </div>
+
+            <!-- 🆕 SECTION COMPTEURS D'EAU -->
+            <div id="water-meter-section" class="form-section hidden">
+              <h3>💧 Contrôle Compteur d'Eau</h3>
+              <p style="color: #6c757d; font-size: 14px; margin-bottom: 15px;">
+                Vérifier la cohérence entre GTB et relevé terrain
+              </p>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Type de compteur :</label>
+                  <select id="formWaterMeterType">
+                    <option value="">Sélectionner...</option>
+                    <option value="general">💧 Compteur général</option>
+                    <option value="eau-froide">❄️ Eau froide sanitaire</option>
+                    <option value="eau-chaude">♨️ Eau chaude sanitaire</option>
+                    <option value="chauffage">🔥 Réseau chauffage</option>
+                    <option value="climatisation">❄️ Réseau climatisation</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>N° série compteur :</label>
+                  <input type="text" id="formWaterMeterSerial" placeholder="Ex: WM-2024-001">
+                </div>
+              </div>
+
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label>Index relevé terrain (m³) :</label>
+                  <input type="number" id="formWaterMeterField" placeholder="12345" step="0.001">
+                </div>
+                <div class="form-group">
+                  <label>Index affiché GTB (m³) :</label>
+                  <input type="number" id="formWaterMeterGTB" placeholder="12340" step="0.001">
+                </div>
+                <div class="form-group">
+                  <label>Écart calculé (m³) :</label>
+                  <input type="number" id="formWaterMeterDiff" readonly placeholder="Auto">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Date dernier relevé :</label>
+                  <input type="date" id="formWaterMeterLastRead">
+                </div>
+                <div class="form-group">
+                  <label>Cohérence GTB/Terrain :</label>
+                  <select id="formWaterMeterCoherence">
+                    <option value="">Sélectionner...</option>
+                    <option value="ok">✅ Cohérent (écart < 2%)</option>
+                    <option value="warning">⚠️ Écart acceptable (2-5%)</option>
+                    <option value="ko">❌ Écart important (> 5%)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Observations compteur :</label>
+                <textarea id="formWaterMeterObs" rows="2"
+                  placeholder="État physique, accessibilité, anomalies détectées..."></textarea>
+              </div>
+            </div>
+
+            <!-- 🆕 SECTION DÉBITS AIR SANITAIRES -->
+            <div id="air-flow-sanitary-section" class="form-section hidden">
+              <h3>🌬️ Relevé Débits Air Sanitaires</h3>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Type de sanitaire :</label>
+                  <select id="formSanitaryType">
+                    <option value="">Sélectionner...</option>
+                    <option value="wc">🚽 WC</option>
+                    <option value="salle-eau">🚿 Salle d'eau</option>
+                    <option value="douche">🚿 Douche collective</option>
+                    <option value="vestiaire">👔 Vestiaire</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Localisation précise :</label>
+                  <input type="text" id="formSanitaryLocation" placeholder="Ex: RDC - Sanitaires Hommes">
+                </div>
+              </div>
+
+              <h4 style="color: #2c5aa0; margin: 20px 0 15px 0;">📊 Mesures de débit</h4>
+
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label>Débit mesuré (m³/h) :</label>
+                  <input type="number" id="formAirFlowMeasured" placeholder="80" step="1">
+                </div>
+                <div class="form-group">
+                  <label>Débit réglementaire (m³/h) :</label>
+                  <input type="number" id="formAirFlowRegulation" placeholder="90" step="1">
+                </div>
+                <div class="form-group">
+                  <label>Conformité :</label>
+                  <select id="formAirFlowCompliance">
+                    <option value="">Sélectionner...</option>
+                    <option value="ok">✅ Conforme</option>
+                    <option value="warning">⚠️ Limite basse</option>
+                    <option value="ko">❌ Non conforme</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nombre de bouches extraction :</label>
+                  <input type="number" id="formAirFlowVents" placeholder="3">
+                </div>
+                <div class="form-group">
+                  <label>État des bouches :</label>
+                  <select id="formAirFlowVentsState">
+                    <option value="">Sélectionner...</option>
+                    <option value="ok">✅ Propres</option>
+                    <option value="dirty">🧹 Encrassées</option>
+                    <option value="blocked">❌ Obstruées</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Observations débits :</label>
+                <textarea id="formAirFlowObs" rows="2"
+                  placeholder="Conditions de mesure, anomalies sonores, vibrations..."></textarea>
+              </div>
+            </div>
+
+            <!-- 🆕 SECTION GTB SUPERVISION -->
+            <div id="gtb-supervision-section" class="form-section hidden">
+              <h3>🖥️ Supervision GTB</h3>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Logiciel GTB :</label>
+                  <input type="text" id="formGTBSoftware" placeholder="Ex: Schneider EcoStruxure, Siemens Desigo...">
+                </div>
+                <div class="form-group">
+                  <label>Version logiciel :</label>
+                  <input type="text" id="formGTBVersion" placeholder="Ex: v3.2.1">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nombre de points supervisés :</label>
+                  <input type="number" id="formGTBPoints" placeholder="450">
+                </div>
+                <div class="form-group">
+                  <label>Points en défaut :</label>
+                  <input type="number" id="formGTBPointsFault" placeholder="12">
+                </div>
+              </div>
+
+              <h4 style="color: #2c5aa0; margin: 20px 0 15px 0;">🔍 Cohérence des relevés</h4>
+
+              <div class="checkbox-group">
+                <div class="checkbox-item">
+                  <input type="checkbox" id="gtb-temp-ok" value="Températures cohérentes">
+                  <label for="gtb-temp-ok">✅ Températures cohérentes</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="gtb-pressure-ok" value="Pressions cohérentes">
+                  <label for="gtb-pressure-ok">✅ Pressions cohérentes</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="gtb-flow-ok" value="Débits cohérents">
+                  <label for="gtb-flow-ok">✅ Débits cohérents</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="gtb-alarm-ok" value="Alarmes fonctionnelles">
+                  <label for="gtb-alarm-ok">✅ Alarmes fonctionnelles</label>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Taux de disponibilité GTB (%) :</label>
+                  <input type="number" id="formGTBAvailability" placeholder="98.5" max="100" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label>Dernière mise à jour système :</label>
+                  <input type="date" id="formGTBLastUpdate">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Anomalies GTB détectées :</label>
+                <textarea id="formGTBAnomalies" rows="3"
+                  placeholder="Lister les incohérences, capteurs HS, points non communicants..."></textarea>
+              </div>
+            </div>
+
+            <!-- 🆕 SECTION QUALITÉ EAU -->
+            <div id="water-quality-section" class="form-section hidden">
+              <h3>💧 Contrôle Qualité d'Eau</h3>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Circuit concerné :</label>
+                  <select id="formWaterQualityCircuit">
+                    <option value="">Sélectionner...</option>
+                    <option value="chauffage">🔥 Circuit chauffage</option>
+                    <option value="climatisation">❄️ Circuit climatisation</option>
+                    <option value="ecs">♨️ Production ECS</option>
+                    <option value="edv">💧 Eau de ville (EDV)</option>
+                    <option value="adoucisseur">🧂 Eau adoucie</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Point de prélèvement :</label>
+                  <input type="text" id="formWaterQualityPoint" placeholder="Ex: Départ chaudière N°1">
+                </div>
+              </div>
+
+              <h4 style="color: #2c5aa0; margin: 20px 0 15px 0;">🔬 Analyses physicochimiques</h4>
+
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label>pH :</label>
+                  <input type="number" id="formWaterQualityPH" placeholder="7.5" step="0.1" min="0" max="14">
+                  <small>Valeur optimale : 7.0 - 8.5</small>
+                </div>
+                <div class="form-group">
+                  <label>Conductivité (µS/cm) :</label>
+                  <input type="number" id="formWaterQualityConductivity" placeholder="450" step="1">
+                  <small>Chauffage : &lt; 500 µS/cm</small>
+                </div>
+                <div class="form-group">
+                  <label>Température (°C) :</label>
+                  <input type="number" id="formWaterQualityTemp" placeholder="60" step="0.1">
+                </div>
+              </div>
+
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label>Dureté TH (°f) :</label>
+                  <input type="number" id="formWaterQualityHardness" placeholder="15" step="0.5">
+                  <small>Optimal : 10-20 °f</small>
+                </div>
+                <div class="form-group">
+                  <label>TAC (°f) :</label>
+                  <input type="number" id="formWaterQualityTAC" placeholder="12" step="0.5">
+                </div>
+                <div class="form-group">
+                  <label>Turbidité (NTU) :</label>
+                  <input type="number" id="formWaterQualityTurbidity" placeholder="0.5" step="0.1">
+                  <small>Limite : &lt; 5 NTU</small>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Chlore résiduel (mg/L) :</label>
+                  <input type="number" id="formWaterQualityChlorine" placeholder="0.3" step="0.01">
+                  <small>ECS : 0.1 - 0.3 mg/L</small>
+                </div>
+                <div class="form-group">
+                  <label>Fer (mg/L) :</label>
+                  <input type="number" id="formWaterQualityIron" placeholder="0.05" step="0.01">
+                  <small>Limite : &lt; 0.2 mg/L</small>
+                </div>
+              </div>
+
+              <h4 style="color: #dc3545; margin: 20px 0 15px 0;">⚠️ Risques identifiés</h4>
+
+              <div class="checkbox-group">
+                <div class="checkbox-item">
+                  <input type="checkbox" id="water-corrosion" value="Risque corrosion">
+                  <label for="water-corrosion">🔴 Risque corrosion</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="water-scale" value="Risque entartrage">
+                  <label for="water-scale">🟡 Risque entartrage</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="water-bacteria" value="Risque bactérien">
+                  <label for="water-bacteria">🔴 Risque bactérien</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="water-ok" value="Qualité conforme">
+                  <label for="water-ok">✅ Qualité conforme</label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Traitement d'eau en place :</label>
+                <select id="formWaterQualityTreatment">
+                  <option value="">Sélectionner...</option>
+                  <option value="none">Aucun</option>
+                  <option value="inhibitor">Inhibiteur de corrosion</option>
+                  <option value="softener">Adoucisseur</option>
+                  <option value="chlorination">Chloration</option>
+                  <option value="uv">UV</option>
+                  <option value="other">Autre</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Observations qualité eau :</label>
+                <textarea id="formWaterQualityObs" rows="3"
+                  placeholder="Couleur de l'eau, odeur, dépôts, recommandations de traitement..."></textarea>
+              </div>
+            </div>
+
+            <!-- NOUVEAUTÉ 100% : Tests Dynamiques CVC -->
+            <div id="cvc-tests-section" class="form-section hidden">
+              <h3>🔬 Tests Dynamiques CVC</h3>
+
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label>Débit d'air mesuré (m³/h) :</label>
+                  <input type="number" id="formDebitAir" placeholder="5000">
+                </div>
+                <div class="form-group">
+                  <label>Pression différentielle (Pa) :</label>
+                  <input type="number" id="formPressionDiff" placeholder="120" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label>Taux de brassage (vol/h) :</label>
+                  <input type="number" id="formTauxBrassage" placeholder="4" step="0.1">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Loi d'eau actuelle :</label>
+                  <input type="text" id="formLoiEau" placeholder="Ex: 70/40°C à -5°C ext">
+                </div>
+                <div class="form-group">
+                  <label>Courbe de chauffe :</label>
+                  <select id="formCourbeChauffe">
+                    <option value="">Sélectionner...</option>
+                    <option value="ok">✅ Optimale</option>
+                    <option value="ajuster">⚠️ À ajuster</option>
+                    <option value="ko">❌ Inadaptée</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- NOUVEAUTÉ 100% : Constats Ventilation Spécifiques -->
+            <div id="ventilation-section" class="form-section hidden">
+              <h3>🌬️ Constats Ventilation Spécifiques</h3>
+
+              <div class="checkbox-group">
+                <div class="checkbox-item">
+                  <input type="checkbox" id="vent-colmatage" value="Colmatage filtres">
+                  <label for="vent-colmatage">Colmatage filtres</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="vent-corrosion" value="Corrosion échangeurs">
+                  <label for="vent-corrosion">Corrosion échangeurs</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="vent-encrassement" value="Encrassement batteries">
+                  <label for="vent-encrassement">Encrassement batteries</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="vent-fuites" value="Fuites réseau">
+                  <label for="vent-fuites">Fuites réseau</label>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Contrôle désenfumage :</label>
+                  <select id="formDesenfumage">
+                    <option value="">Sélectionner...</option>
+                    <option value="ok">✅ Conforme</option>
+                    <option value="ko">❌ Non conforme</option>
+                    <option value="na">N/A</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Test extraction (m³/h) :</label>
+                  <input type="number" id="formTestExtraction" placeholder="3000">
+                </div>
+              </div>
+            </div>
+
+            <!-- NOUVEAUTÉ 100% : Mesures Électriques Détaillées -->
+            <div id="elec-measures-section" class="form-section hidden">
+              <h3>⚡ Mesures Électriques Détaillées</h3>
+
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label>Tension L1 (V) :</label>
+                  <input type="number" id="formTensionL1" placeholder="230" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label>Tension L2 (V) :</label>
+                  <input type="number" id="formTensionL2" placeholder="230" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label>Tension L3 (V) :</label>
+                  <input type="number" id="formTensionL3" placeholder="230" step="0.1">
+                </div>
+              </div>
+
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label>Cos φ mesuré :</label>
+                  <input type="number" id="formCosPhi" placeholder="0.92" step="0.01" min="0" max="1">
+                </div>
+                <div class="form-group">
+                  <label>Équilibrage phases (%) :</label>
+                  <input type="number" id="formEquilibragePhases" placeholder="95" max="100">
+                </div>
+                <div class="form-group">
+                  <label>Continuité terre (Ω) :</label>
+                  <input type="number" id="formContinuiteTerre" placeholder="< 1" step="0.01">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Contrôle différentiel :</label>
+                  <select id="formControleDiff">
+                    <option value="">Sélectionner...</option>
+                    <option value="ok">✅ Fonctionnel (< 30mA)</option>
+                    <option value="lent">⚠️ Déclenchement lent</option>
+                    <option value="ko">❌ Défaillant</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>État protection :</label>
+                  <select id="formEtatProtection">
+                    <option value="">Sélectionner...</option>
+                    <option value="ok">✅ Conforme</option>
+                    <option value="partiel">⚠️ Partiel</option>
+                    <option value="ko">❌ Absent</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- NOUVEAUTÉ 100% : Essais SSI Détaillés -->
+            <div id="ssi-tests-section" class="form-section hidden">
+              <h3>🚨 Essais SSI Détaillés</h3>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Test détecteurs fumée :</label>
+                  <select id="formTestDetecteursFumee">
+                    <option value="">Sélectionner...</option>
+                    <option value="ok">✅ Tous fonctionnels</option>
+                    <option value="partiel">⚠️ Certains défaillants</option>
+                    <option value="ko">❌ Non fonctionnels</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Test DM (déclencheurs manuels) :</label>
+                  <select id="formTestDM">
+                    <option value="">Sélectionner...</option>
+                    <option value="ok">✅ Tous fonctionnels</option>
+                    <option value="partiel">⚠️ Certains défaillants</option>
+                    <option value="ko">❌ Non fonctionnels</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Temps évacuation mesuré (min) :</label>
+                  <input type="number" id="formTempsEvacuation" placeholder="3" step="0.5">
+                </div>
+                <div class="form-group">
+                  <label>Temps évacuation réglementaire (min) :</label>
+                  <input type="number" id="formTempsEvacRegl" placeholder="5" step="0.5">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Mise en sécurité testée :</label>
+                <div class="checkbox-group">
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="ssi-desenfumage" value="Désenfumage">
+                    <label for="ssi-desenfumage">Désenfumage</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="ssi-ascenseurs" value="Ascenseurs">
+                    <label for="ssi-ascenseurs">Arrêt ascenseurs</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="ssi-ventilation" value="Ventilation">
+                    <label for="ssi-ventilation">Arrêt ventilation</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="ssi-portes" value="Portes coupe-feu">
+                    <label for="ssi-portes">Fermeture portes CF</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- NOUVEAUTÉ 100% : Diagnostics HSE Complets -->
+            <div id="hse-diag-section" class="form-section hidden">
+              <h3>🛡️ Diagnostics HSE Complets</h3>
+
+              <h4 style="color: #dc3545; margin-top: 20px">Diagnostic Amiante</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Amiante détecté :</label>
+                  <select id="formAmianteDetecte">
+                    <option value="">Sélectionner...</option>
+                    <option value="non">❌ Non détecté</option>
+                    <option value="oui">⚠️ Présent</option>
+                    <option value="suspect">🔍 Matériau suspect</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Localisation amiante :</label>
+                  <input type="text" id="formAmianteLocal" placeholder="Ex: Faux plafond R+3">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Type amiante :</label>
+                  <input type="text" id="formAmianteType" placeholder="Ex: Chrysotile">
+                </div>
+                <div class="form-group">
+                  <label>État de conservation :</label>
+                  <select id="formAmianteEtat">
+                    <option value="">Sélectionner...</option>
+                    <option value="bon">✅ Bon (EP=1)</option>
+                    <option value="moyen">⚠️ Moyen (EP=2)</option>
+                    <option value="degrade">❌ Dégradé (EP=3)</option>
+                  </select>
+                </div>
+              </div>
+
+              <h4 style="color: #fd7e14; margin-top: 20px">Diagnostic Plomb</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Plomb détecté :</label>
+                  <select id="formPlombDetecte">
+                    <option value="">Sélectionner...</option>
+                    <option value="non">❌ Non détecté (< 1 mg/cm²)</option>
+                    <option value="oui">⚠️ Présent (≥ 1 mg/cm²)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Concentration (mg/cm²) :</label>
+                  <input type="number" id="formPlombConcentration" placeholder="0.5" step="0.1">
+                </div>
+              </div>
+
+              <h4 style="color: #6610f2; margin-top: 20px">Mesure Radon</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Concentration radon (Bq/m³) :</label>
+                  <input type="number" id="formRadonConcentration" placeholder="150">
+                </div>
+                <div class="form-group">
+                  <label>Seuil réglementaire (Bq/m³) :</label>
+                  <input type="number" id="formRadonSeuil" value="300" readonly>
+                </div>
+              </div>
+
+              <h4 style="color: #20c997; margin-top: 20px">Contrôle Légionelle</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Concentration (UFC/L) :</label>
+                  <input type="number" id="formLegionelleConcentration" placeholder="500">
+                </div>
+                <div class="form-group">
+                  <label>Seuil alerte (UFC/L) :</label>
+                  <input type="number" id="formLegionelleSeuil" value="1000" readonly>
+                </div>
+              </div>
+
+              <h4 style="color: #333; margin-top: 20px">DUER (Document Unique)</h4>
+              <div class="form-group">
+                <label>Risques identifiés :</label>
+                <textarea id="formDUER" rows="3"
+                  placeholder="Lister les risques professionnels identifiés..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Date dernière mise à jour DUER :</label>
+                <input type="date" id="formDUERDate">
+              </div>
+            </div>
+
+            <!-- NOUVEAUTÉ 100% : Données IoT / Capteurs -->
+            <div id="iot-data-section" class="form-section hidden">
+              <h3>📡 Données IoT / Capteurs</h3>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Protocole communication :</label>
+                  <select id="formIoTProtocole">
+                    <option value="">Sélectionner...</option>
+                    <option value="lorawan">LoRaWAN</option>
+                    <option value="sigfox">Sigfox</option>
+                    <option value="nbiot">NB-IoT</option>
+                    <option value="wifi">Wi-Fi</option>
+                    <option value="zigbee">Zigbee</option>
+                    <option value="ble">Bluetooth LE</option>
+                    <option value="modbus">Modbus</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Fréquence transmission :</label>
+                  <input type="text" id="formIoTFrequence" placeholder="Ex: Toutes les 15 min">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Serveur / Cloud :</label>
+                  <input type="text" id="formIoTServeur" placeholder="Ex: AWS IoT Core">
+                </div>
+                <div class="form-group">
+                  <label>Dernière remontée données :</label>
+                  <input type="datetime-local" id="formIoTDerniereRemontee">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>État connexion :</label>
+                <select id="formIoTConnexion">
+                  <option value="">Sélectionner...</option>
+                  <option value="ok">✅ Connecté</option>
+                  <option value="intermittent">⚠️ Intermittent</option>
+                  <option value="ko">❌ Déconnecté</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Section 3: Mesures objectives (Équipements mécaniques uniquement) -->
+            <div id="measurements-section" class="form-section hidden">
+              <h3>📏 Mesures Objectives</h3>
+
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label>Température départ (°C) :</label>
+                  <input type="number" id="formTempDepart" placeholder="60" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label>Température retour (°C) :</label>
+                  <input type="number" id="formTempRetour" placeholder="40" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label>ΔT calculé (°C) :</label>
+                  <input type="number" id="formDeltaT" readonly placeholder="Auto">
+                </div>
+              </div>
+
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label>Pression (bar) :</label>
+                  <input type="number" id="formPression" placeholder="2.5" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label>Intensité moteur (A) :</label>
+                  <input type="number" id="formIntensite" placeholder="15.2" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label>Niveau sonore (dB) :</label>
+                  <input type="number" id="formNiveauSonore" placeholder="65" max="120">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Débit mesuré (m³/h) :</label>
+                <input type="number" id="formDebit" placeholder="1000" step="1">
+              </div>
+            </div>
+
+            <!-- Section 4: Performance énergétique -->
+            <div id="energy-section" class="form-section hidden">
+              <h3>⚡ Performance Énergétique</h3>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Consommation relevée (kWh/an) :</label>
+                  <input type="number" id="formConsommationReel" placeholder="25000">
+                </div>
+                <div class="form-group">
+                  <label>Consommation théorique (kWh/an) :</label>
+                  <input type="number" id="formConsommationTheo" placeholder="22000">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Écart performance (%) :</label>
+                  <input type="number" id="formEcartPerf" readonly placeholder="Auto-calculé">
+                </div>
+                <div class="form-group">
+                  <label>Durée de vie résiduelle (ans) :</label>
+                  <input type="number" id="formDureeVie" placeholder="8" max="30">
+                </div>
+              </div>
+            </div>
+
+            <!-- NOUVEAUTÉ 100% : Production Énergies Renouvelables -->
+            <div id="enr-production-section" class="form-section hidden">
+              <h3>♻️ Production Énergies Renouvelables</h3>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Production mesurée (kWh/an) :</label>
+                  <input type="number" id="formEnRProduction" placeholder="50000">
+                </div>
+                <div class="form-group">
+                  <label>Production prévisionnelle (kWh/an) :</label>
+                  <input type="number" id="formEnRPrevisionnel" placeholder="48000">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Taux autoconsommation (%) :</label>
+                  <input type="number" id="formEnRAutoconso" placeholder="65" max="100">
+                </div>
+                <div class="form-group">
+                  <label>Injection réseau (kWh/an) :</label>
+                  <input type="number" id="formEnRInjection" placeholder="17500">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Performance vs prévisionnel (%) :</label>
+                <input type="number" id="formEnRPerformance" readonly placeholder="Auto-calculé">
+              </div>
+            </div>
+
+            <!-- Section 5: Contrôles réglementaires -->
+            <div id="regulatory-section" class="form-section">
+              <h3>📋 Contrôles Réglementaires</h3>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Dernier contrôle :</label>
+                  <input type="date" id="formDernierControle">
+                </div>
+                <div class="form-group">
+                  <label>Organisme agréé :</label>
+                  <input type="text" id="formOrganisme" placeholder="Ex: Bureau Veritas">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>N° rapport :</label>
+                  <input type="text" id="formNumRapport" placeholder="RPT-2024-001">
+                </div>
+                <div class="form-group">
+                  <label>Prochaine échéance :</label>
+                  <input type="date" id="formProchaineEcheance">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Réserves émises :</label>
+                <select id="formReserves">
+                  <option value="">Sélectionner...</option>
+                  <option value="non">Non</option>
+                  <option value="oui">Oui</option>
+                  <option value="na">N/A</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>État levée réserves :</label>
+                <select id="formLeveeReserves">
+                  <option value="">Sélectionner...</option>
+                  <option value="oui">Oui - Levées</option>
+                  <option value="non">Non - En attente</option>
+                  <option value="encours">En cours</option>
+                  <option value="na">N/A</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Section 6: État Visuel -->
+            <div class="form-section">
+              <h3>👀 État Visuel (EV)</h3>
+
+              <div class="radio-group">
+                <div class="radio-option ev-0" data-ev="0">
+                  <strong>EV 0</strong><br>
+                  Neuf / Très bon<br>
+                  <small>
+                    < 2 ans OU révision complète récente</small>
+                </div>
+                <div class="radio-option ev-1" data-ev="1">
+                  <strong>EV 1</strong><br>
+                  Bon état<br>
+                  <small>100% fonctionnel, entretien à jour</small>
+                </div>
+                <div class="radio-option ev-2" data-ev="2">
+                  <strong>EV 2</strong><br>
+                  Moyen<br>
+                  <small>80-100% fonctionnel, usure acceptable</small>
+                </div>
+                <div class="radio-option ev-3" data-ev="3">
+                  <strong>EV 3</strong><br>
+                  Mauvais<br>
+                  <small>50-80% fonctionnel, intervention < 6 mois</small>
+                </div>
+                <div class="radio-option ev-4" data-ev="4">
+                  <strong>EV 4</strong><br>
+                  Critique<br>
+                  <small>
+                    < 50% fonctionnel OU risque sécurité</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 7: Criticité -->
+            <div class="form-section">
+              <h3>⚠️ Criticité (CRIT)</h3>
+
+              <div class="radio-group">
+                <div class="radio-option crit-u" data-crit="U">
+                  <strong>🔴 U - URGENT</strong><br>
+                  Sécurité / risque / non-conformité grave
+                </div>
+                <div class="radio-option crit-i" data-crit="I">
+                  <strong>🟠 I - IMPORTANT</strong><br>
+                  À planifier rapidement
+                </div>
+                <div class="radio-option crit-a" data-crit="A">
+                  <strong>🟡 A - AMÉLIORATION</strong><br>
+                  Confort, performance, optimisation
+                </div>
+                <div class="radio-option crit-s" data-crit="S">
+                  <strong>🟢 S - SUIVI</strong><br>
+                  Point à recontrôler plus tard
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 8: Type d'anomalie -->
+            <div class="form-section">
+              <h3>🏷️ Type d'Anomalie (TYPE)</h3>
+
+              <div class="radio-group">
+                <div class="radio-option type-c" data-type="C">
+                  <strong>C - CONFORMITÉ</strong><br>
+                  Réglementaire
+                </div>
+                <div class="radio-option type-f" data-type="F">
+                  <strong>F - FONCTIONNEMENT</strong><br>
+                  Dysfonctionnement technique
+                </div>
+                <div class="radio-option type-v" data-type="V">
+                  <strong>V - VISUEL</strong><br>
+                  Dégradation apparente
+                </div>
+                <div class="radio-option type-s" data-type="S">
+                  <strong>S - SÉCURITÉ</strong><br>
+                  Risque sécurité personnes/biens
+                </div>
+                <div class="radio-option type-m" data-type="M">
+                  <strong>M - MAINTENANCE</strong><br>
+                  Entretien insuffisant
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 9: Estimation budgétaire -->
+            <div class="form-section">
+              <h3>💰 Estimation Budgétaire (BUDGET)</h3>
+
+              <div class="radio-group">
+                <div class="radio-option budget-a" data-budget="A">
+                  <strong>A - < 500€</strong><br>
+                      Mineure
+                </div>
+                <div class="radio-option budget-b" data-budget="B">
+                  <strong>B - 500-2 000€</strong><br>
+                  Faible
+                </div>
+                <div class="radio-option budget-c" data-budget="C">
+                  <strong>C - 2 000-10 000€</strong><br>
+                  Moyenne
+                </div>
+                <div class="radio-option budget-d" data-budget="D">
+                  <strong>D - 10 000-50 000€</strong><br>
+                  Importante
+                </div>
+                <div class="radio-option budget-e" data-budget="E">
+                  <strong>E - > 50 000€</strong><br>
+                  Majeure
+                </div>
+              </div>
+            </div>
+
+            <!-- NOUVEAUTÉ 100% : Priorité Action AUTO-CALCULÉE -->
+            <div class="form-section">
+              <h3>🎯 Priorité d'Action (Auto-calculée)</h3>
+
+              <div class="priority-display">
+                <div class="priority-score" id="priorityScore">-</div>
+                <div class="priority-label" id="priorityLabel">En attente de saisie</div>
+              </div>
+
+              <small style="text-align: center; display: block; margin-top: 15px">
+                Formule : (EV + 1) × poids CRIT × poids BUDGET<br>
+                EV 0 (Neuf) = priorité 1 | EV 4 (Critique) = priorité 5
+              </small>
+            </div>
+
+            <!-- Section 10: Description de l'anomalie -->
+            <div class="form-section">
+              <h3>📝 Description de l'Anomalie</h3>
+
+              <div class="form-group">
+                <label>Constat détaillé :</label>
+                <textarea id="formConstat" rows="4"
+                  placeholder="Décrire précisément l'anomalie constatée, les symptômes, les impacts..."></textarea>
+              </div>
+            </div>
+
+            <!-- NOUVEAUTÉ 100% : Espace Croquis/Schéma Terrain -->
+            <div class="form-section">
+              <h3>🖊️ Espace Croquis / Schéma Terrain</h3>
+
+              <p style="color: #6c757d; font-size: 14px; margin-bottom: 15px;">
+                Dessinez l'implantation de l'équipement, le réseau de distribution, ou marquez les points singuliers.
+              </p>
+
+              <div style="text-align: center; margin-bottom: 10px;">
+                <button type="button" class="btn btn-secondary" onclick="clearCanvas()" style="margin-right: 10px;">🗑️
+                  Effacer</button>
+                <button type="button" class="btn btn-secondary" onclick="changeDrawColor('black')">⚫ Noir</button>
+                <button type="button" class="btn btn-secondary" onclick="changeDrawColor('red')">🔴 Rouge</button>
+                <button type="button" class="btn btn-secondary" onclick="changeDrawColor('blue')">🔵 Bleu</button>
+                <button type="button" class="btn btn-secondary" onclick="changeDrawColor('green')">🟢 Vert</button>
+              </div>
+
+              <canvas id="croquisCanvas"
+                style="border: 2px solid #dee2e6; border-radius: 8px; background: white; width: 100%; max-width: 600px; height: 400px; display: block; margin: 0 auto; touch-action: none;"
+                width="600" height="400">
+              </canvas>
+            </div>
+
+            <!-- Section 11: Observations du technicien -->
+            <div class="form-section">
+              <h3>💬 Observations Technicien</h3>
+
+              <div class="form-group">
+                <label>Observations / Remarques :</label>
+                <textarea id="formObservations" rows="3"
+                  placeholder="Commentaires complémentaires, contexte particulier..."></textarea>
+              </div>
+            </div>
+
+            <!-- Section 12: Actions correctives recommandées -->
+            <div class="form-section">
+              <h3>🔧 Actions Correctives Recommandées</h3>
+
+              <div class="form-group">
+                <label>Actions à mettre en œuvre :</label>
+                <textarea id="formActions" rows="4"
+                  placeholder="Lister les actions correctives recommandées, les travaux nécessaires..."></textarea>
+              </div>
+            </div>
+
+            <!-- Boutons d'action -->
+            <div class="action-buttons">
+              <button type="button" class="btn btn-secondary" id="btnCancelForm">❌ Annuler</button>
+              <button type="button" class="btn btn-success" id="btnSaveEquipment">
+                ✅ Enregistrer l'équipement
+              </button>
+              <button type="button" class="btn btn-danger" id="btnDeleteEquipment" style="display: none;">
+                🗑️ Effacer la fiche
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ÉCRAN 4: EXPORTS & STATISTIQUES -->
+    <div id="exports" class="screen">
+      <div class="header" style="position: relative">
+        <button class="nav-button" onclick="showScreen('dashboard'); renderDashboard();">← Accueil</button>
+        <h1>📊 Import-Export & Statistiques</h1>
+      </div>
+
+      <div class="content">
+        <h2 style="text-align: center; color: #2c5aa0; margin-bottom: 30px">Exportation des données</h2>
+
+        <!-- NOUVEAU : Format de restitution souhaité -->
+        <div class="form-section" style="max-width: 800px; margin: 0 auto 30px auto;">
+          <h3>📋 Format de Restitution Souhaité</h3>
+          <p style="color: #6c757d; font-size: 14px; margin-bottom: 15px;">
+            Sélectionnez le format d'export principal pour votre rapport de visite
+          </p>
+          <div class="form-group">
+            <label for="formatRestitution">Format préféré :</label>
+            <select id="formatRestitution"
+              style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 5px; font-size: 16px;">
+              <option value="csv">📄 Excel avec photos intégrées (CSV + Photos)</option>
+              <option value="json">💾 JSON complet (Backup réimportable)</option>
+              <option value="pdf">📑 PDF avec hyperliens photos</option>
+              <option value="gmao">🔧 Import GMAO (logiciel de maintenance)</option>
+              <option value="bim">🏗️ Format BIM/IFC (maquette numérique)</option>
+              <option value="cloud">☁️ Plateforme collaborative (URL)</option>
+            </select>
+          </div>
+          <div class="form-group" id="cloudUrlGroup" style="display: none;">
+            <label for="cloudUrl">URL Plateforme Collaborative :</label>
+            <input type="url" id="cloudUrl" placeholder="https://..." style="width: 100%;">
+            <small>Exemple : https://votre-plateforme.com/projet/defense-21000</small>
+          </div>
+          <div class="form-group" id="gmaoLogicielGroup" style="display: none;">
+            <label for="gmaoLogiciel">Nom du logiciel GMAO :</label>
+            <input type="text" id="gmaoLogiciel" placeholder="Ex: CARL Source, Mainpro, Yardi..." style="width: 100%;">
+          </div>
+          <button class="btn btn-success" onclick="saveFormatRestitution()" style="margin-top: 10px;">💾 Enregistrer la
+            préférence</button>
+        </div>
+
+        <div style="text-align: center; margin: 40px 0">
+          <button class="btn btn-success" onclick="exportCSVAndPhotos()">📄 Exporter CSV + 📦 Photos (ZIP)</button>
+          <button class="btn btn-primary" onclick="exportJSON()">💾 Exporter JSON Complet</button>
+        </div>
+
+        <p style="text-align: center; color: #6c757d; font-size: 14px; margin: 20px 0;">
+          ✅ CSV : Ouverture directe dans Excel | ✅ ZIP : Toutes les photos classées par lot | ✅ JSON : Sauvegarde
+          complète réimportable
+        </p>
+
+        <div style="border-top: 2px solid #e9ecef; padding-top: 40px; margin-top: 40px;">
+          <h3 style="color: #333; text-align: center; margin-bottom: 20px;">📥 Importer des données (Restauration)</h3>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <input type="file" id="importJSONFile" accept=".json" style="display: none;"
+              onchange="handleJSONImport(event)">
+            <button class="btn btn-warning" onclick="document.getElementById('importJSONFile').click()">
+              📥 Importer JSON (Restaurer données)
+            </button>
+          </div>
+
+          <p style="text-align: center; color: #6c757d; font-size: 14px; margin: 20px 0;">
+            ⚠️ <strong>Attention :</strong> L'import écrasera les données actuelles. Exportez d'abord si nécessaire.
+          </p>
+        </div>
+
+        <h3 style="color: #333; margin: 40px 0 20px 0">📈 Statistiques détaillées par lot :</h3>
+
+        <div id="statsDetails" style="margin: 30px 0">
+          <!-- Rempli par JavaScript -->
+        </div>
+
+        <div style="text-align: center; margin: 40px 0">
+          <h3 style="color: #333; margin: 40px 0 20px 0">📊 Synchronisation Google Sheets :</h3>
+          <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin: 20px 0">
+            <button class="btn btn-primary" onclick="configureGoogleSheets()">⚙️ Configurer Google Sheets</button>
+            <button id="btnToggleGoogleSheets" class="btn btn-secondary" onclick="toggleGoogleSheets()">⏸️ Google Sheets
+              Désactivé</button>
+          </div>
+          <p style="color: #6c757d; font-size: 14px; margin-top: 10px">
+            Activez la synchronisation pour envoyer automatiquement les données vers Google Sheets
+          </p>
+          <button class="btn btn-secondary" onclick="clearAllData()" style="margin-top: 30px">🗑️ Effacer toutes les
+            données</button>
+        </div>
+      </div>
+    </div>
+    <!-- ÉCRAN 5: JOURNAL DE VISITE -->
+    <div id="journalVisite" class="screen">
+      <div class="header" style="position: relative">
+        <button class="nav-button" onclick="showScreen('dashboard'); renderDashboard();">← Accueil</button>
+        <h1>📝 Journal de Visite</h1>
+      </div>
+
+      <div class="content">
+        <h2 style="text-align: center; color: #2c5aa0; margin-bottom: 30px">À compléter pendant ou après la visite</h2>
+
+        <div class="form-section">
+          <h3>⚠️ Incidents de visite</h3>
+          <p style="color: #6c757d; font-size: 14px;">Accès refusé, zone inaccessible, danger, problème rencontré...</p>
+          <textarea id="journalIncidents" rows="4"
+            style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 5px;"
+            placeholder="Décrire les incidents..."></textarea>
+        </div>
+
+        <div class="form-section">
+          <h3>🚫 Zones non visitées / partiellement visitées</h3>
+          <p style="color: #6c757d; font-size: 14px;">Justifier pourquoi certaines zones n'ont pas pu être auditées</p>
+          <textarea id="journalZonesNonVisitees" rows="4"
+            style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 5px;"
+            placeholder="Zones non visitées et raisons..."></textarea>
+        </div>
+
+        <div class="form-section">
+          <h3>🔍 Points à revoir / Seconde visite nécessaire</h3>
+          <p style="color: #6c757d; font-size: 14px;">Éléments nécessitant un contrôle complémentaire</p>
+          <textarea id="journalPointsARevoir" rows="4"
+            style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 5px;"
+            placeholder="Points à recontrôler..."></textarea>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0">
+          <button class="btn btn-success" onclick="saveJournalVisite()">💾 Sauvegarder le journal</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ÉCRAN 6: SYNTHÈSE & KPIs -->
+    <div id="syntheseKpis" class="screen">
+      <div class="header" style="position: relative">
+        <button class="nav-button" onclick="showScreen('dashboard'); renderDashboard();">← Accueil</button>
+        <h1>📊 Synthèse & KPIs</h1>
+      </div>
+
+      <div class="content">
+
+        <!-- SYNTHÈSE TERRAIN -->
+        <h2 style="color: #2c5aa0; margin-bottom: 20px">📝 Synthèse Terrain du Technicien</h2>
+
+        <div class="form-section">
+          <h3>✅ Principales forces du site (techniquement)</h3>
+          <textarea id="syntheseForces" rows="3"
+            style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 5px;"
+            placeholder="Points forts techniques..."></textarea>
+        </div>
+
+        <div class="form-section">
+          <h3>❌ Principales faiblesses / risques immédiats</h3>
+          <textarea id="syntheseFaiblesses" rows="3"
+            style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 5px;"
+            placeholder="Points faibles et risques..."></textarea>
+        </div>
+
+        <div class="form-section">
+          <h3>🎯 Points à traiter en priorité</h3>
+          <textarea id="synthesePriorites" rows="3"
+            style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 5px;"
+            placeholder="Priorités d'action..."></textarea>
+        </div>
+
+        <div class="form-section">
+          <h3>💡 Recommandations terrain</h3>
+          <textarea id="syntheseRecommandations" rows="3"
+            style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 5px;"
+            placeholder="Recommandations pour l'organisation, accès, consignes..."></textarea>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0">
+          <button class="btn btn-success" onclick="saveSyntheseTerrain()">💾 Sauvegarder la synthèse</button>
+        </div>
+
+        <!-- SCORE DE SANTÉ GLOBAL PAR LOT -->
+        <div style="border-top: 2px solid #e9ecef; padding-top: 40px; margin-top: 40px;">
+          <h2 style="color: #2c5aa0; margin-bottom: 20px">🥇 Score de Santé Global par Lot</h2>
+          <p style="color: #6c757d; margin-bottom: 20px;">Calculé automatiquement : Moyenne EV de tous les équipements
+            du lot</p>
+
+          <div id="scoresSanteLots" style="overflow-x: auto;">
+            <!-- Table générée par JavaScript -->
+          </div>
+        </div>
+
+        <!-- INDICATEURS DE PERFORMANCE -->
+        <div style="border-top: 2px solid #e9ecef; padding-top: 40px; margin-top: 40px;">
+          <h2 style="color: #2c5aa0; margin-bottom: 20px">📈 Indicateurs de Performance (KPIs)</h2>
+
+          <div id="kpisContainer">
+            <!-- KPIs générés par JavaScript -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- JAVASCRIPT COMPLET -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+  <script>
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CONFIGURATION GLOBALE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    const LOTS_TECHNIQUES = [
+      'Structure / GO',
+      'Enveloppe',
+      'Toitures',
+      'CVC Production',
+      'CVC Distribution',
+      'CVC Émission',
+      'Ventilation',
+      'Électricité CFO',
+      'Électricité CFA',
+      'GTB',
+      'SSI',
+      'Plomberie',
+      'Ascenseurs',
+      'Locaux techniques',
+      'EnR',
+      'IoT',
+      'HSE'
+    ];
+
+    const EQUIPMENT_TYPES_BY_LOT = {
+      'Structure / GO': ['Dalle', 'Poutre', 'Poteau', 'Voile', 'Plancher', 'Autre'],
+      Enveloppe: ['Façade', 'Menuiserie', 'Garde-corps', 'Bardage', 'Autre'],
+      Toitures: ['Étanchéité', 'Couverture', 'Charpente', 'Zinguerie', 'Autre'],
+
+      // 🆕 CVC avec nouveaux types
+      'CVC Production': [
+        'Chaudière',
+        'Pompe à chaleur',
+        'Groupe froid',
+        'Ballon ECS',
+        '🆕 Compteur d\'eau',
+        '🆕 Contrôle qualité eau',
+        '🆕 Débits air sanitaires',
+        'Autre'
+      ],
+      'CVC Distribution': [
+        'Réseau hydraulique',
+        'Pompe',
+        'Vanne',
+        'Échangeur',
+        '🆕 Compteur d\'eau',
+        '🆕 Contrôle qualité eau',
+        'Autre'
+      ],
+      'CVC Émission': [
+        'Radiateur',
+        'Plancher chauffant',
+        'Ventilo-convecteur',
+        'Cassette',
+        '🆕 Contrôle qualité eau',
+        'Autre'
+      ],
+
+      Ventilation: ['CTA', 'VMC', 'Extracteur', 'Réseau aéraulique', 'Autre'],
+      'Électricité CFO': ['TGBT', 'Tableau divisionnaire', 'Éclairage', 'Prise', 'Autre'],
+
+      // 🆕 Électricité CFA (Courants Faibles)
+      'Électricité CFA': [
+        'Tableau CFA',
+        'VDI',
+        'Téléphonie',
+        'Contrôle d\'accès',
+        'Vidéo surveillance',
+        'Autre'
+      ],
+
+      // 🆕 GTB (Gestion Technique du Bâtiment) - LOT SÉPARÉ
+      'GTB': [
+        'Armoire GTB',
+        'Automate',
+        'Capteur',
+        'Interface',
+        '🆕 Supervision GTB',
+        '🆕 Cohérence relevés GTB',
+        'Autre'
+      ],
+
+      SSI: ['Centrale SSI', 'Détecteur', 'DM', 'BAAS', 'Autre'],
+
+      // 🆕 Plomberie avec nouveaux types
+      Plomberie: [
+        'Réseau EU',
+        'Réseau EP',
+        'Réseau ECS',
+        'Réseau EF',
+        '🆕 Compteur d\'eau',
+        '🆕 Contrôle qualité eau',
+        'Autre'
+      ],
+
+      Ascenseurs: ['Ascenseur', 'Monte-charge', 'Autre'],
+      'Locaux techniques': ['Local CVC', 'Local électrique', 'Local SSI', 'Autre'],
+      EnR: ['Panneaux PV', 'Éolienne', 'Géothermie', 'Solaire thermique', 'Autre'],
+      IoT: ['Capteur T°C', 'Capteur CO2', 'Capteur présence', 'Gateway', 'Autre'],
+      HSE: ['Point de contrôle', 'Zone à risque', 'Autre']
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STATE MANAGEMENT
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // === SUPABASE CONFIG (ajout auto) ===
+    const SUPABASE_URL = "https://wffxduxwbmluvgrivpoe.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZnhkdXh3Ym1sdXZncml2cG9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5MjMyOTAsImV4cCI6MjA3OTQ5OTI5MH0.YnOTXPh2T0iHSZTjVGi2u45VMcLBxVOGa_a77LX_mR4";
+    let supabaseClient = null;
+    if (typeof supabase !== 'undefined') {
+      try {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      } catch (e) {
+        console.error("Erreur initialisation Supabase :", e);
+      }
+    }
+    // === FIN SUPABASE CONFIG ===
+
+    const AppState = {
+      currentScreen: 'dashboard',
+      currentLot: null,
+      currentEquipment: null,
+      editingEquipmentId: null,
+      currentEV: null,
+      currentCRIT: null,
+      currentTYPE: null,
+      currentBUDGET: null,
+      equipmentData: {},
+      completedLots: [],
+      currentPhotos: [],
+      currentCroquis: null,
+      googleSheetsUrl: '',
+      googleSheetsEnabled: false,
+      formatRestitution: 'csv',
+      cloudUrl: '',
+      gmaoLogiciel: '',
+      journalVisite: {
+        incidents: '',
+        zonesNonVisitees: '',
+        pointsARevoir: ''
+      },
+      syntheseTerrain: {
+        forces: '',
+        faiblesses: '',
+        priorites: '',
+        recommandations: ''
+      }
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // INITIALISATION
+    // ═══════════════════════════════════════════════════════════════════════
+
+    document.addEventListener('DOMContentLoaded', function () {
+      console.log('🚀 Initialisation PEC Tech App 100%...');
+
+      loadFromLocalStorage();
+      initializeEventListeners();
+      renderDashboard();
+      updateOnlineStatus();
+      startAutoSave();
+
+      console.log('✅ Application initialisée');
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GESTION DES ÉCRANS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function showScreen(screenName) {
+      console.log('📱 Navigation vers:', screenName);
+
+      document.querySelectorAll('.screen').forEach((screen) => {
+        screen.classList.remove('active');
+      });
+
+      const screen = document.getElementById(screenName);
+      if (screen) {
+        screen.classList.add('active');
+        AppState.currentScreen = screenName;
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // RENDER DASHBOARD
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function renderDashboard() {
+      console.log('🎨 Render Dashboard avec', LOTS_TECHNIQUES.length, 'lots');
+
+      const container = document.getElementById('lotsList');
+      if (!container) return;
+
+      container.innerHTML = '';
+
+      LOTS_TECHNIQUES.forEach((lot) => {
+        const equipments = AppState.equipmentData[lot] || [];
+        const hasEquipments = equipments.length > 0;
+        const isCompleted = AppState.completedLots.includes(lot);
+        const lotCard = document.createElement('div');
+        lotCard.className = `lot-card ${hasEquipments ? 'completed' : ''}`;
+
+        let badgeClass = 'badge-secondary';
+        let badgeText = 'À faire';
+
+        if (isCompleted) {
+          badgeClass = 'badge-primary';
+          badgeText = '✅ Terminé';
+        } else if (hasEquipments) {
+          badgeClass = 'badge-success';
+          badgeText = '📄 En cours';
+        }
+
+        lotCard.innerHTML = `
+        <div class="lot-title">${lot}</div>
+        <div class="lot-progress">${equipments.length} équipement(s)</div>
+        <span class="badge ${badgeClass}">
+          ${badgeText}
+        </span>
+      `;
+
+        lotCard.addEventListener('click', () => selectLot(lot));
+        container.appendChild(lotCard);
+      });
+
+      updateDashboardStats();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MISE À JOUR STATISTIQUES
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function updateDashboardStats() {
+      let totalEquipments = 0;
+      let totalPhotos = 0;
+      let lotsWithData = 0;
+
+      LOTS_TECHNIQUES.forEach((lot) => {
+        const equipments = AppState.equipmentData[lot] || [];
+        if (equipments.length > 0) lotsWithData++;
+        totalEquipments += equipments.length;
+        equipments.forEach((eq) => {
+          if (eq.photos) totalPhotos += eq.photos.length;
+        });
+      });
+
+      const lotsCompleted = AppState.completedLots.length;
+      const lotsInProgress = lotsWithData - lotsCompleted;
+      const progressPercent = Math.round((lotsWithData / LOTS_TECHNIQUES.length) * 100);
+      const totalLots = LOTS_TECHNIQUES.length;
+
+      document.getElementById('lotsInProgress').textContent = `${lotsInProgress} / ${totalLots}`;
+      document.getElementById('lotsCompleted').textContent = `${lotsCompleted} / ${totalLots}`;
+      document.getElementById('equipmentCount').textContent = totalEquipments;
+      document.getElementById('photoCount').textContent = totalPhotos;
+      document.getElementById('globalProgress').style.width = `${progressPercent}%`;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MARQUER LOT COMME TERMINÉ
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function toggleLotCompletion() {
+      if (!AppState.currentLot) return;
+
+      const lotIndex = AppState.completedLots.indexOf(AppState.currentLot);
+
+      if (lotIndex === -1) {
+        // Marquer comme terminé
+        AppState.completedLots.push(AppState.currentLot);
+        showToast('✅ Lot marqué comme terminé', 'success');
+        document.getElementById('btnMarkLotComplete').innerHTML = '📄 Marquer comme en cours';
+        document.getElementById('btnMarkLotComplete').classList.remove('btn-primary');
+        document.getElementById('btnMarkLotComplete').classList.add('btn-warning');
+      } else {
+        // Remettre en cours
+        AppState.completedLots.splice(lotIndex, 1);
+        showToast('📄 Lot remis en cours', 'info');
+        document.getElementById('btnMarkLotComplete').innerHTML = '✅ Marquer le lot comme terminé';
+        document.getElementById('btnMarkLotComplete').classList.remove('btn-warning');
+        document.getElementById('btnMarkLotComplete').classList.add('btn-primary');
+      }
+
+      saveToLocalStorage();
+      renderDashboard();
+    }
+
+    function updateLotCompletionButton() {
+      const btn = document.getElementById('btnMarkLotComplete');
+      if (!btn || !AppState.currentLot) return;
+
+      const isCompleted = AppState.completedLots.includes(AppState.currentLot);
+
+      if (isCompleted) {
+        btn.innerHTML = '📄 Marquer comme en cours';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-warning');
+      } else {
+        btn.innerHTML = '✅ Marquer le lot comme terminé';
+        btn.classList.remove('btn-warning');
+        btn.classList.add('btn-primary');
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SÉLECTION LOT
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function selectLot(lotName) {
+      console.log('📂 Lot sélectionné:', lotName);
+      AppState.currentLot = lotName;
+
+      document.getElementById('currentLotTitle').textContent = lotName;
+      document.getElementById('breadcrumbCurrentLot').textContent = lotName;
+
+      renderEquipmentList();
+      updateLotCompletionButton();
+      showScreen('equipmentList');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // AFFICHAGE LISTE ÉQUIPEMENTS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function renderEquipmentList() {
+      const container = document.getElementById('equipmentGrid');
+      const equipments = AppState.equipmentData[AppState.currentLot] || [];
+
+      container.innerHTML = '';
+
+      if (equipments.length === 0) {
+        container.innerHTML = `
+        <div style="text-align: center; padding: 60px 20px; color: #6c757d;">
+          <div style="font-size: 48px; margin-bottom: 20px;">📋</div>
+          <h3>Aucun équipement saisi</h3>
+          <p>Cliquez sur "Ajouter un équipement" pour commencer</p>
+        </div>
+      `;
+        return;
+      }
+
+      equipments.forEach((equipment) => {
+        const card = document.createElement('div');
+        card.className = 'equipment-card';
+
+        const evLabel = ['🔴 Critique', '🟠 Mauvais', '🟡 Moyen', '🟢 Bon', '🔵 Neuf'][equipment.ev] || '-';
+
+        card.innerHTML = `
+        <div class="equipment-info">
+          <h3>${equipment.type || 'Équipement'}</h3>
+          <div class="equipment-details">
+            ${equipment.code || ''} | ${evLabel}
+            ${equipment.marque ? ' | ' + equipment.marque : ''}
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary btn-small" onclick="editEquipment('${equipment.id}')">✏️ Modifier</button>
+          <button class="btn btn-danger btn-small" onclick="deleteEquipment('${equipment.id}')">🗑️ Supprimer</button>
+        </div>
+      `;
+
+        container.appendChild(card);
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // AFFICHAGE ADAPTATIF 100%
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function applyAdaptiveFormDisplay(lot) {
+      console.log('🎯 Affichage adaptatif 100% pour:', lot);
+
+      // Masquer TOUS les champs conditionnels
+      const conditionalSections = [
+        'mechanical-fields',
+        'structural-fields',
+        'measurements-section',
+        'energy-section',
+        'cvc-tests-section',
+        'ventilation-section',
+        'elec-measures-section',
+        'ssi-tests-section',
+        'hse-diag-section',
+        'iot-data-section',
+        'enr-production-section',
+        // 🆕 Nouvelles sections
+        'water-meter-section',
+        'air-flow-sanitary-section',
+        'gtb-supervision-section',
+        'water-quality-section'
+      ];
+
+      conditionalSections.forEach((id) => {
+        const section = document.getElementById(id);
+        if (section) section.classList.add('hidden');
+      });
+
+      // 🆕 Gestion dynamique selon le TYPE d'équipement sélectionné
+      const typeSelect = document.getElementById('formType');
+      if (typeSelect) {
+        typeSelect.addEventListener('change', function () {
+          updateFieldsBasedOnType(this.value, lot);
+        });
+      }
+
+      // Afficher selon le lot (comportement par défaut)
+      switch (lot) {
+        case 'CVC Production':
+          show(['mechanical-fields', 'measurements-section', 'energy-section', 'cvc-tests-section']);
+          break;
+
+        case 'CVC Distribution':
+        case 'CVC Émission':
+          show(['mechanical-fields', 'measurements-section', 'energy-section']);
+          break;
+
+        case 'Ventilation':
+          show(['mechanical-fields', 'measurements-section', 'ventilation-section']);
+          break;
+
+        case 'Électricité CFO':
+          show(['mechanical-fields', 'elec-measures-section']);
+          break;
+
+        case 'Électricité CFA':
+          show(['mechanical-fields']);
+          break;
+
+        case 'GTB':
+          show(['mechanical-fields']);
+          break;
+
+        case 'SSI':
+          show(['mechanical-fields', 'ssi-tests-section']);
+          break;
+
+        case 'Structure / GO':
+        case 'Enveloppe':
+        case 'Toitures':
+          show(['structural-fields']);
+          break;
+
+        case 'Plomberie':
+          show(['structural-fields']);
+          break;
+
+        case 'Ascenseurs':
+          show(['mechanical-fields', 'measurements-section']);
+          break;
+
+        case 'EnR':
+          show(['mechanical-fields', 'measurements-section', 'energy-section', 'enr-production-section']);
+          break;
+
+        case 'IoT':
+          show(['mechanical-fields', 'iot-data-section']);
+          break;
+
+        case 'HSE':
+          show(['hse-diag-section']);
+          break;
+
+        case 'Locaux techniques':
+          show(['structural-fields']);
+          break;
+      }
+
+      function show(ids) {
+        ids.forEach((id) => {
+          const section = document.getElementById(id);
+          if (section) section.classList.remove('hidden');
+        });
+      }
+    }
+
+    // 🆕 NOUVELLE FONCTION : Affichage selon TYPE d'équipement
+    function updateFieldsBasedOnType(equipmentType, lot) {
+      console.log('🔄 Mise à jour champs pour type:', equipmentType);
+
+      // Masquer toutes les sections spécifiques
+      const specificSections = [
+        'water-meter-section',
+        'air-flow-sanitary-section',
+        'gtb-supervision-section',
+        'water-quality-section'
+      ];
+
+      specificSections.forEach(id => {
+        const section = document.getElementById(id);
+        if (section) section.classList.add('hidden');
+      });
+
+      // Afficher selon le type sélectionné
+      if (equipmentType.includes('Compteur d\'eau') || equipmentType.includes('🆕 Compteur')) {
+        const section = document.getElementById('water-meter-section');
+        if (section) section.classList.remove('hidden');
+
+        // Auto-calcul écart compteur
+        setupWaterMeterCalculation();
+      }
+
+      if (equipmentType.includes('Débits air sanitaires') || equipmentType.includes('🆕 Débits')) {
+        const section = document.getElementById('air-flow-sanitary-section');
+        if (section) section.classList.remove('hidden');
+      }
+
+      if (equipmentType.includes('GTB') || equipmentType.includes('Supervision') || equipmentType.includes('Cohérence')) {
+        const section = document.getElementById('gtb-supervision-section');
+        if (section) section.classList.remove('hidden');
+      }
+
+      if (equipmentType.includes('Contrôle qualité eau') || equipmentType.includes('🆕 Contrôle qualité')) {
+        const section = document.getElementById('water-quality-section');
+        if (section) section.classList.remove('hidden');
+      }
+    }
+
+    // 🆕 Auto-calcul écart compteur d'eau
+    function setupWaterMeterCalculation() {
+      const fieldInput = document.getElementById('formWaterMeterField');
+      const gtbInput = document.getElementById('formWaterMeterGTB');
+      const diffInput = document.getElementById('formWaterMeterDiff');
+
+      function calculateDiff() {
+        const field = parseFloat(fieldInput?.value);
+        const gtb = parseFloat(gtbInput?.value);
+
+        if (!isNaN(field) && !isNaN(gtb)) {
+          const diff = Math.abs(field - gtb);
+          if (diffInput) diffInput.value = diff.toFixed(3);
+
+          // Auto-sélection cohérence
+          const coherenceSelect = document.getElementById('formWaterMeterCoherence');
+          if (coherenceSelect && gtb > 0) {
+            const percentDiff = (diff / gtb) * 100;
+            if (percentDiff < 2) {
+              coherenceSelect.value = 'ok';
+            } else if (percentDiff < 5) {
+              coherenceSelect.value = 'warning';
+            } else {
+              coherenceSelect.value = 'ko';
+            }
+          }
+        }
+      }
+
+      if (fieldInput) fieldInput.addEventListener('input', calculateDiff);
+      if (gtbInput) gtbInput.addEventListener('input', calculateDiff);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // LISTENERS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function initializeEventListeners() {
+      // Navigation
+      document.getElementById('btnExports')?.addEventListener('click', () => showScreen('exports'));
+      document.getElementById('btnJournalVisite')?.addEventListener('click', () => {
+        loadJournalVisite();
+        showScreen('journalVisite');
+      });
+      document.getElementById('btnSyntheseKpis')?.addEventListener('click', () => {
+        loadSyntheseTerrain();
+        renderScoreSanteLots();
+        renderKPIs();
+        showScreen('syntheseKpis');
+      });
+      document.getElementById('btnRetourLots')?.addEventListener('click', () => {
+        showScreen('dashboard');
+        renderDashboard();
+      });
+      document.getElementById('btnRetourEquipments')?.addEventListener('click', () => {
+        showScreen('equipmentList');
+        renderEquipmentList();
+      });
+
+      // Breadcrumbs
+      document.getElementById('breadcrumbHome2')?.addEventListener('click', () => {
+        showScreen('dashboard');
+        renderDashboard();
+      });
+
+      // Ajout équipement
+      document.getElementById('btnAddEquipment')?.addEventListener('click', () => {
+        resetForm();
+        showScreen('equipmentForm');
+      });
+
+      document.getElementById('fabAddEquipment')?.addEventListener('click', () => {
+        resetForm();
+        showScreen('equipmentForm');
+      });
+
+      // Marquer lot terminé
+      // Marquer lot terminé
+      document.getElementById('btnMarkLotComplete')?.addEventListener('click', () => {
+        toggleLotCompletion();
+      });
+
+      // Annuler formulaire
+      document.getElementById('btnCancelForm')?.addEventListener('click', () => {
+        showScreen('equipmentList');
+        renderEquipmentList();
+      });
+
+      // Sauvegarder équipement
+      document.getElementById('btnSaveEquipment')?.addEventListener('click', saveEquipment);
+
+      // Effacer équipement
+      document.getElementById('btnDeleteEquipment')?.addEventListener('click', () => {
+        deleteEquipment();
+      });
+
+      // Sélections EV, CRIT, TYPE, BUDGET
+      document.querySelectorAll('.radio-option').forEach((option) => {
+        option.addEventListener('click', function () {
+          const parent = this.parentElement;
+          parent.querySelectorAll('.radio-option').forEach((opt) => opt.classList.remove('selected'));
+          this.classList.add('selected');
+
+          if (this.dataset.ev !== undefined) AppState.currentEV = parseInt(this.dataset.ev);
+          if (this.dataset.crit) AppState.currentCRIT = this.dataset.crit;
+          if (this.dataset.type) AppState.currentTYPE = this.dataset.type;
+          if (this.dataset.budget) AppState.currentBUDGET = this.dataset.budget;
+
+          calculatePriority();
+        });
+      });
+
+      // Photos
+      document.getElementById('formPhotos')?.addEventListener('change', handlePhotoUpload);
+      document.getElementById('formPhotoCamera')?.addEventListener('change', handlePhotoUpload);
+
+      // Auto-calculs
+      document.getElementById('formTempDepart')?.addEventListener('input', calculateDeltaT);
+      document.getElementById('formTempRetour')?.addEventListener('input', calculateDeltaT);
+      document.getElementById('formConsommationReel')?.addEventListener('input', calculateEcartPerf);
+      document.getElementById('formConsommationTheo')?.addEventListener('input', calculateEcartPerf);
+      document.getElementById('formEnRProduction')?.addEventListener('input', calculateEnRPerformance);
+      document.getElementById('formEnRPrevisionnel')?.addEventListener('input', calculateEnRPerformance);
+
+      // GPS
+      document.getElementById('btnGPS')?.addEventListener('click', captureGPS);
+
+      // Type équipement
+      document.getElementById('formType')?.addEventListener('change', function () {
+        const autreField = document.getElementById('formTypeAutre');
+        if (this.value === 'Autre') {
+          autreField.style.display = 'block';
+        } else {
+          autreField.style.display = 'none';
+        }
+      });
+
+      // NOUVEAU : Format de restitution
+      document.getElementById('formatRestitution')?.addEventListener('change', function () {
+        const cloudGroup = document.getElementById('cloudUrlGroup');
+        const gmaoGroup = document.getElementById('gmaoLogicielGroup');
+
+        cloudGroup.style.display = this.value === 'cloud' ? 'block' : 'none';
+        gmaoGroup.style.display = this.value === 'gmao' ? 'block' : 'none';
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // RESET FORMULAIRE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function resetForm() {
+      document.getElementById('equipForm')?.reset();
+      AppState.editingEquipmentId = null;
+      AppState.currentPhotos = [];
+      AppState.currentCroquis = null;
+      AppState.currentEV = null;
+      AppState.currentCRIT = null;
+      AppState.currentTYPE = null;
+      AppState.currentBUDGET = null;
+
+      document.getElementById('formLot').value = AppState.currentLot || '';
+      document.getElementById('formCode').value = generateCode();
+
+      initCanvas();
+      document.getElementById('formDate').valueAsDate = new Date();
+
+      applyAdaptiveFormDisplay(AppState.currentLot);
+      populateTypeSelect();
+
+      document.querySelectorAll('.radio-option.selected').forEach((opt) => opt.classList.remove('selected'));
+      document.getElementById('photoPreview').innerHTML = '';
+      document.getElementById('priorityScore').textContent = '-';
+      document.getElementById('priorityLabel').textContent = 'En attente de saisie';
+
+      document.getElementById('btnDeleteEquipment').style.display = 'none';
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GÉNÉRATION CODE UNIQUE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function generateCode() {
+      const prefix = AppState.currentLot ? AppState.currentLot.substring(0, 3).toUpperCase() : 'EQP';
+      const timestamp = Date.now().toString().slice(-6);
+      return `${prefix}-${timestamp}`;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // POPULATE TYPE SELECT
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function populateTypeSelect() {
+      const select = document.getElementById('formType');
+      if (!select || !AppState.currentLot) return;
+
+      const types = EQUIPMENT_TYPES_BY_LOT[AppState.currentLot] || [];
+      select.innerHTML = '<option value="">Sélectionner...</option>';
+      types.forEach((type) => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.textContent = type;
+        select.appendChild(option);
+      });
+
+      const autreOption = document.createElement('option');
+      autreOption.value = 'Autre';
+      autreOption.textContent = '➕ Autre (saisie libre)';
+      select.appendChild(autreOption);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TOAST NOTIFICATIONS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CALCUL PRIORITÉ ACTION
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function calculatePriority() {
+      const ev = AppState.currentEV;
+      const crit = AppState.currentCRIT;
+      const budget = AppState.currentBUDGET;
+
+      if (ev === null || !crit || !budget) {
+        document.getElementById('priorityScore').textContent = '-';
+        document.getElementById('priorityLabel').textContent = 'En attente de saisie';
+        return;
+      }
+
+      const critWeight = { U: 10, I: 5, A: 2, S: 1 };
+      const budgetWeight = { A: 1, B: 2, C: 5, D: 8, E: 10 };
+
+      const score = (ev + 1) * critWeight[crit] * budgetWeight[budget];
+
+      document.getElementById('priorityScore').textContent = score;
+
+      let label = '';
+      let color = '';
+
+      if (score >= 300) {
+        label = '🔴 PRIORITÉ ABSOLUE';
+        color = '#dc3545';
+      } else if (score >= 150) {
+        label = '🟠 PRIORITÉ ÉLEVÉE';
+        color = '#fd7e14';
+      } else if (score >= 50) {
+        label = '🟡 PRIORITÉ MOYENNE';
+        color = '#ffc107';
+      } else {
+        label = '🟢 PRIORITÉ BASSE';
+        color = '#28a745';
+      }
+
+      document.getElementById('priorityLabel').textContent = label;
+      document.getElementById('priorityLabel').style.color = color;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CALCULS AUTOMATIQUES
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function calculateDeltaT() {
+      const depart = parseFloat(document.getElementById('formTempDepart')?.value);
+      const retour = parseFloat(document.getElementById('formTempRetour')?.value);
+      if (!isNaN(depart) && !isNaN(retour)) {
+        document.getElementById('formDeltaT').value = (depart - retour).toFixed(1);
+      }
+    }
+
+    function calculateEcartPerf() {
+      const reel = parseFloat(document.getElementById('formConsommationReel')?.value);
+      const theo = parseFloat(document.getElementById('formConsommationTheo')?.value);
+      if (!isNaN(reel) && !isNaN(theo) && theo > 0) {
+        const ecart = (((reel - theo) / theo) * 100).toFixed(1);
+        document.getElementById('formEcartPerf').value = ecart;
+      }
+    }
+
+    function calculateEnRPerformance() {
+      const prod = parseFloat(document.getElementById('formEnRProduction')?.value);
+      const prev = parseFloat(document.getElementById('formEnRPrevisionnel')?.value);
+      if (!isNaN(prod) && !isNaN(prev) && prev > 0) {
+        const perf = ((prod / prev) * 100).toFixed(1);
+        document.getElementById('formEnRPerformance').value = perf;
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GESTION PHOTOS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function takePhoto() {
+      if (AppState.currentPhotos.length >= 10) {
+        showToast('❌ Maximum 10 photos par équipement', 'error');
+        return;
+      }
+
+      const cameraInput = document.getElementById('formPhotoCamera');
+      cameraInput.click();
+    }
+
+    function handlePhotoUpload(e) {
+      const files = Array.from(e.target.files);
+
+      if (AppState.currentPhotos.length + files.length > 10) {
+        showToast('❌ Maximum 10 photos par équipement', 'error');
+        return;
+      }
+
+      files.forEach((file) => {
+        if (file.size > 10 * 1024 * 1024) {
+          showToast('❌ Photo trop volumineuse : ' + file.name, 'error');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          AppState.currentPhotos.push({
+            id: Date.now() + Math.random(),
+            data: event.target.result,
+            name: file.name,
+            size: file.size
+          });
+          renderPhotoPreview();
+        };
+        reader.readAsDataURL(file);
+      });
+
+      e.target.value = '';
+    }
+
+    function renderPhotoPreview() {
+      const container = document.getElementById('photoPreview');
+      container.innerHTML = '';
+
+      AppState.currentPhotos.forEach((photo, index) => {
+        const div = document.createElement('div');
+        div.className = 'photo-item';
+        div.innerHTML = `
+            <img src="${photo.data}" alt="${photo.name}">
+            <button class="photo-remove" onclick="removePhoto(${index})">×</button>
+          `;
+        container.appendChild(div);
+      });
+    }
+
+    function removePhoto(index) {
+      AppState.currentPhotos.splice(index, 1);
+      renderPhotoPreview();
+    }
+
+    function scanQRCode() {
+      showToast('📷 Fonction scan QR Code (nécessite caméra)', 'info');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CANVAS CROQUIS/SCHÉMA
+    // ═══════════════════════════════════════════════════════════════════════
+
+    let canvas = null;
+    let ctx = null;
+    let isDrawing = false;
+    let currentColor = 'black';
+    let lastX = 0;
+    let lastY = 0;
+
+    function initCanvas() {
+      canvas = document.getElementById('croquisCanvas');
+      if (!canvas) return;
+
+      ctx = canvas.getContext('2d');
+      canvas.width = 600;
+      canvas.height = 400;
+
+      if (AppState.currentCroquis) {
+        const img = new Image();
+        img.onload = function () {
+          ctx.drawImage(img, 0, 0);
+        };
+        img.src = AppState.currentCroquis;
+      }
+
+      canvas.addEventListener('mousedown', startDrawing);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseup', stopDrawing);
+      canvas.addEventListener('mouseout', stopDrawing);
+
+      canvas.addEventListener('touchstart', handleTouch);
+      canvas.addEventListener('touchmove', handleTouch);
+      canvas.addEventListener('touchend', stopDrawing);
+    }
+
+    function startDrawing(e) {
+      isDrawing = true;
+      const rect = canvas.getBoundingClientRect();
+      lastX = e.clientX - rect.left;
+      lastY = e.clientY - rect.top;
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = currentColor;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      lastX = x;
+      lastY = y;
+    }
+
+    function handleTouch(e) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 'mousemove', {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      });
+      canvas.dispatchEvent(mouseEvent);
+    }
+
+    function stopDrawing() {
+      if (isDrawing) {
+        isDrawing = false;
+        AppState.currentCroquis = canvas.toDataURL();
+      }
+    }
+
+    function clearCanvas() {
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        AppState.currentCroquis = null;
+      }
+    }
+
+    function changeDrawColor(color) {
+      currentColor = color;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GPS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function captureGPS() {
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const info = `📍 ${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+            document.getElementById('gpsInfo').textContent = info;
+            showToast('✅ Position GPS capturée', 'success');
+          },
+          (error) => {
+            showToast('❌ Impossible de capturer le GPS', 'error');
+          }
+        );
+      } else {
+        showToast('❌ GPS non disponible', 'error');
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GOOGLE SHEETS INTEGRATION
+    // ═══════════════════════════════════════════════════════════════════════
+
+    async function sendToGoogleSheets(equipment) {
+      try {
+        const response = await fetch(AppState.googleSheetsUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(equipment)
+        });
+
+        console.log('📊 Données envoyées vers Google Sheets');
+        showToast('📊 Synchronisé avec Google Sheets', 'success');
+      } catch (error) {
+        console.error('❌ Erreur Google Sheets:', error);
+        showToast('⚠️ Erreur de synchronisation Google Sheets', 'warning');
+      }
+    }
+
+    function configureGoogleSheets() {
+      const url = prompt(
+        '🔗 CONFIGURATION GOOGLE SHEETS\n\n' +
+        'Collez l\'URL de votre Web App Google Apps Script:\n' +
+        '(Format: https://script.google.com/macros/s/.../exec)',
+        AppState.googleSheetsUrl || ''
+      );
+
+      if (url) {
+        AppState.googleSheetsUrl = url.trim();
+        AppState.googleSheetsEnabled = true;
+        localStorage.setItem('pecTechGoogleSheetsUrl', url.trim());
+        localStorage.setItem('pecTechGoogleSheetsEnabled', 'true');
+        showToast('✅ Google Sheets configuré et activé', 'success');
+        updateGoogleSheetsButton();
+      }
+    }
+
+    function toggleGoogleSheets() {
+      if (!AppState.googleSheetsUrl) {
+        showToast('⚠️ Veuillez d\'abord configurer l\'URL Google Sheets', 'warning');
+        configureGoogleSheets();
+        return;
+      }
+
+      AppState.googleSheetsEnabled = !AppState.googleSheetsEnabled;
+      localStorage.setItem('pecTechGoogleSheetsEnabled', AppState.googleSheetsEnabled);
+
+      const status = AppState.googleSheetsEnabled ? 'activée' : 'désactivée';
+      const icon = AppState.googleSheetsEnabled ? '✅' : '⏸️';
+      showToast(`${icon} Synchronisation Google Sheets ${status}`, 'info');
+
+      updateGoogleSheetsButton();
+    }
+
+    function updateGoogleSheetsButton() {
+      const btn = document.getElementById('btnToggleGoogleSheets');
+      if (btn) {
+        if (AppState.googleSheetsEnabled) {
+          btn.textContent = '✅ Google Sheets Activé';
+          btn.style.backgroundColor = '#28a745';
+        } else {
+          btn.textContent = '⏸️ Google Sheets Désactivé';
+          btn.style.backgroundColor = '#6c757d';
+        }
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SAUVEGARDE ÉQUIPEMENT (🆕 AVEC NOUVEAUX CHAMPS)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function saveEquipment() {
+      if (!AppState.currentLot) {
+        showToast('❌ Erreur: aucun lot sélectionné', 'error');
+        return;
+      }
+
+      const equipment = {
+        id: AppState.editingEquipmentId || Date.now().toString(),
+        lot: AppState.currentLot,
+        date: document.getElementById('formDate').value,
+        heureDebut: document.getElementById('formHeureDebut').value,
+        heureFin: document.getElementById('formHeureFin').value,
+        technicien: document.getElementById('formTechnicien').value,
+        entreprise: document.getElementById('formEntreprise').value,
+        contactSite: document.getElementById('formContactSite').value,
+        telReferent: document.getElementById('formTelReferent').value,
+        meteo: document.getElementById('formMeteo').value,
+        typeVisite: document.getElementById('formTypeVisite').value,
+        niveau: document.getElementById('formNiveau').value,
+        local: document.getElementById('formLocal').value,
+        type: document.getElementById('formType').value === 'Autre' ? document.getElementById('formTypeAutre').value : document.getElementById('formType').value,
+        code: document.getElementById('formCode').value,
+        qrCode: document.getElementById('formQRCode').value,
+        refDOE: document.getElementById('formRefDOE').value,
+        refPlan: document.getElementById('formRefPlan').value,
+        marque: document.getElementById('formMarque')?.value,
+        modele: document.getElementById('formModele')?.value,
+        serie: document.getElementById('formSerie')?.value,
+        puissance: document.getElementById('formPuissance')?.value,
+        unite: document.getElementById('formUnite')?.value,
+        annee: document.getElementById('formAnnee')?.value,
+
+        // 🆕 Champs compteur d'eau
+        waterMeterType: document.getElementById('formWaterMeterType')?.value,
+        waterMeterSerial: document.getElementById('formWaterMeterSerial')?.value,
+        waterMeterField: document.getElementById('formWaterMeterField')?.value,
+        waterMeterGTB: document.getElementById('formWaterMeterGTB')?.value,
+        waterMeterDiff: document.getElementById('formWaterMeterDiff')?.value,
+        waterMeterLastRead: document.getElementById('formWaterMeterLastRead')?.value,
+        waterMeterCoherence: document.getElementById('formWaterMeterCoherence')?.value,
+        waterMeterObs: document.getElementById('formWaterMeterObs')?.value,
+
+        // 🆕 Champs débits air sanitaires
+        sanitaryType: document.getElementById('formSanitaryType')?.value,
+        sanitaryLocation: document.getElementById('formSanitaryLocation')?.value,
+        airFlowMeasured: document.getElementById('formAirFlowMeasured')?.value,
+        airFlowRegulation: document.getElementById('formAirFlowRegulation')?.value,
+        airFlowCompliance: document.getElementById('formAirFlowCompliance')?.value,
+        airFlowVents: document.getElementById('formAirFlowVents')?.value,
+        airFlowVentsState: document.getElementById('formAirFlowVentsState')?.value,
+        airFlowObs: document.getElementById('formAirFlowObs')?.value,
+
+        // 🆕 Champs GTB
+        gtbSoftware: document.getElementById('formGTBSoftware')?.value,
+        gtbVersion: document.getElementById('formGTBVersion')?.value,
+        gtbPoints: document.getElementById('formGTBPoints')?.value,
+        gtbPointsFault: document.getElementById('formGTBPointsFault')?.value,
+        gtbAvailability: document.getElementById('formGTBAvailability')?.value,
+        gtbLastUpdate: document.getElementById('formGTBLastUpdate')?.value,
+        gtbAnomalies: document.getElementById('formGTBAnomalies')?.value,
+
+        // 🆕 Champs qualité eau
+        waterQualityCircuit: document.getElementById('formWaterQualityCircuit')?.value,
+        waterQualityPoint: document.getElementById('formWaterQualityPoint')?.value,
+        waterQualityPH: document.getElementById('formWaterQualityPH')?.value,
+        waterQualityConductivity: document.getElementById('formWaterQualityConductivity')?.value,
+        waterQualityTemp: document.getElementById('formWaterQualityTemp')?.value,
+        waterQualityHardness: document.getElementById('formWaterQualityHardness')?.value,
+        waterQualityTAC: document.getElementById('formWaterQualityTAC')?.value,
+        waterQualityTurbidity: document.getElementById('formWaterQualityTurbidity')?.value,
+        waterQualityChlorine: document.getElementById('formWaterQualityChlorine')?.value,
+        waterQualityIron: document.getElementById('formWaterQualityIron')?.value,
+        waterQualityTreatment: document.getElementById('formWaterQualityTreatment')?.value,
+        waterQualityObs: document.getElementById('formWaterQualityObs')?.value,
+
+        ev: AppState.currentEV,
+        crit: AppState.currentCRIT,
+        type_anomalie: AppState.currentTYPE,
+        budget: AppState.currentBUDGET,
+        priorite: document.getElementById('priorityScore').textContent,
+        constat: document.getElementById('formConstat').value,
+        observations: document.getElementById('formObservations').value,
+        actions: document.getElementById('formActions').value,
+        photos: AppState.currentPhotos,
+        croquis: AppState.currentCroquis,
+        timestamp: new Date().toISOString()
+      };
+
+      if (!AppState.equipmentData[AppState.currentLot]) {
+        AppState.equipmentData[AppState.currentLot] = [];
+      }
+
+      if (AppState.editingEquipmentId) {
+        const index = AppState.equipmentData[AppState.currentLot].findIndex((e) => e.id === AppState.editingEquipmentId);
+        if (index !== -1) {
+          AppState.equipmentData[AppState.currentLot][index] = equipment;
+        }
+      } else {
+        AppState.equipmentData[AppState.currentLot].push(equipment);
+      }
+
+      saveToLocalStorage();
+      showToast('✅ Équipement enregistré avec succès', 'success');
+
+      if (AppState.googleSheetsEnabled && AppState.googleSheetsUrl) {
+        sendToGoogleSheets(equipment);
+      }
+
+      if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        sendToSupabase(equipment);
+      }
+
+      setTimeout(() => {
+        showScreen('equipmentList');
+        renderEquipmentList();
+      }, 1000);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ENVOI VERS SUPABASE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    async function sendToSupabase(equipment) {
+      try {
+        if (!supabaseClient) {
+          console.warn("Supabase non initialisé (supabaseClient nul).");
+          return;
+        }
+
+        const payload = {
+          code: equipment.code || null,
+          lot: equipment.lot || null,
+          niveau: equipment.niveau || null,
+          local: equipment.local || null,
+          date_visite: equipment.date || null,
+          heure_debut: equipment.heureDebut || null,
+          heure_fin: equipment.heureFin || null,
+          technicien: equipment.technicien || null,
+          entreprise: equipment.entreprise || null,
+          ev: typeof equipment.ev === "number" ? equipment.ev : (equipment.ev ? Number(equipment.ev) || null : null),
+          criticite: equipment.crit || null,
+          type_anomalie: equipment.type_anomalie || null,
+          budget: equipment.budget || null,
+          remarques: equipment.observations || equipment.constat || null,
+          latitude: null,
+          longitude: null,
+          data: (function () {
+            const clone = { ...equipment };
+            delete clone.photos;
+            delete clone.croquis;
+            return clone;
+          })()
+        };
+
+        console.log("Payload envoyé à Supabase :", payload);
+
+        const { data: inserted, error } = await supabaseClient
+          .from("equipements")
+          .insert(payload)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Erreur insertion Supabase :", error);
+          showToast('❌ Erreur lors de l\'envoi vers Supabase', 'error');
+          return;
+        }
+
+        console.log("Équipement inséré dans Supabase :", inserted);
+
+        if (Array.isArray(equipment.photos) && equipment.photos.length > 0) {
+          for (let i = 0; i < equipment.photos.length; i++) {
+            const photoItem = equipment.photos[i];
+            const base64 = (typeof photoItem === "string") ? photoItem : (photoItem && photoItem.data ? photoItem.data : null);
+            if (!base64) continue;
+
+            const url = await uploadPhotoToSupabase(base64, `photo_${i + 1}.jpg`, inserted.id);
+            if (!url) continue;
+
+            const { error: photoErr } = await supabaseClient
+              .from("photos")
+              .insert({
+                equipement_id: inserted.id,
+                url: url
+              });
+
+            if (photoErr) {
+              console.error("Erreur insertion ligne photo Supabase :", photoErr);
+            }
+          }
+        }
+
+        showToast('✅ Équipement envoyé à Supabase', 'success');
+      } catch (e) {
+        console.error("Erreur sendToSupabase (exception) :", e);
+        showToast('❌ Erreur technique Supabase', 'error');
+      }
+    }
+
+    async function uploadPhotoToSupabase(base64Data, fileName, equipmentId) {
+      try {
+        if (!supabaseClient || !supabaseClient.storage) {
+          console.warn("Supabase storage non disponible.");
+          return null;
+        }
+
+        if (typeof base64Data !== "string") {
+          console.warn("uploadPhotoToSupabase: base64Data n'est pas une chaîne", base64Data);
+          return null;
+        }
+
+        const parts = base64Data.split(';base64,');
+        if (parts.length !== 2) {
+          console.warn("Format base64 inattendu pour la photo.");
+          return null;
+        }
+
+        const contentType = parts[0].replace('data:', '');
+        const byteCharacters = atob(parts[1]);
+        const byteArrays = [];
+
+        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+          const slice = byteCharacters.slice(offset, offset + 512);
+          const byteNumbers = new Array(slice.length);
+          for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+          }
+          byteArrays.push(new Uint8Array(byteNumbers));
+        }
+
+        const file = new Blob(byteArrays, { type: contentType || "image/jpeg" });
+
+        const path = `${equipmentId}/${fileName}`;
+        const { error } = await supabaseClient
+          .storage
+          .from("pec-photos")
+          .upload(path, file, {
+            cacheControl: "3600",
+            upsert: true
+          });
+
+        if (error) {
+          console.error("Erreur upload photo Supabase:", error);
+          return null;
+        }
+
+        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/pec-photos/${equipmentId}/${fileName}`;
+        return publicUrl;
+      } catch (err) {
+        console.error("Exception uploadPhotoToSupabase :", err);
+        return null;
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SUPPRESSION ÉQUIPEMENT (🆕 AVEC SUPABASE)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    async function deleteEquipment(equipmentId = null) {
+      const idToDelete = equipmentId || AppState.editingEquipmentId;
+
+      if (!AppState.currentLot || !idToDelete) {
+        showToast('❌ Erreur: aucun équipement sélectionné', 'error');
+        return;
+      }
+
+      const equipmentToDelete = AppState.equipmentData[AppState.currentLot]?.find(
+        (e) => e.id === idToDelete
+      );
+
+      if (!equipmentToDelete) {
+        showToast('❌ Erreur: équipement introuvable', 'error');
+        return;
+      }
+
+      const equipmentName = equipmentToDelete.type || 'Équipement';
+      const confirmMessage = `⚠️ ATTENTION : Voulez-vous vraiment SUPPRIMER définitivement cette fiche ?\n\n` +
+        `Lot: ${AppState.currentLot}\n` +
+        `Équipement: ${equipmentName}\n` +
+        `Code: ${equipmentToDelete.code || 'N/A'}\n\n` +
+        `Cette action est IRRÉVERSIBLE !`;
+
+      if (!confirm(confirmMessage)) {
+        return;
+      }
+
+      const supabaseDeleted = await deleteEquipmentFromSupabase(idToDelete);
+
+      const index = AppState.equipmentData[AppState.currentLot].findIndex(
+        (e) => e.id === idToDelete
+      );
+
+      if (index !== -1) {
+        AppState.equipmentData[AppState.currentLot].splice(index, 1);
+        saveToLocalStorage();
+
+        if (supabaseDeleted) {
+          showToast('🗑️ Fiche supprimée (Local + Supabase)', 'success');
+        } else {
+          showToast('🗑️ Fiche supprimée localement (Erreur Supabase)', 'warning');
+        }
+
+        if (!equipmentId) {
+          setTimeout(() => {
+            showScreen('equipmentList');
+            renderEquipmentList();
+          }, 1000);
+        } else {
+          renderEquipmentList();
+        }
+      } else {
+        showToast('❌ Erreur: équipement introuvable', 'error');
+      }
+    }
+
+    async function deleteEquipmentFromSupabase(equipmentId) {
+      try {
+        if (!supabaseClient) {
+          console.warn("Supabase non initialisé");
+          return false;
+        }
+
+        const equipmentToDelete = Object.values(AppState.equipmentData)
+          .flat()
+          .find(eq => eq.id === equipmentId);
+
+        if (!equipmentToDelete || !equipmentToDelete.code) {
+          console.warn("Équipement non trouvé ou sans code");
+          return false;
+        }
+
+        // 🆕 ÉTAPE 1: Récupérer l'ID de l'équipement dans Supabase via son code
+        const { data: equipmentData, error: fetchError } = await supabaseClient
+          .from("equipements")
+          .select("id")
+          .eq("code", equipmentToDelete.code)
+          .single();
+
+        if (fetchError || !equipmentData) {
+          console.warn("Équipement non trouvé dans Supabase:", fetchError);
+          // L'équipement n'existe pas dans Supabase, considérer comme OK
+          return true;
+        }
+
+        const supabaseEquipmentId = equipmentData.id;
+
+        // 🆕 ÉTAPE 2: Supprimer les photos du storage S3
+        if (supabaseClient.storage) {
+          try {
+            const { data: files, error: listError } = await supabaseClient
+              .storage
+              .from("pec-photos")
+              .list(`${supabaseEquipmentId}/`);
+
+            if (!listError && files && files.length > 0) {
+              const filePaths = files.map(file => `${supabaseEquipmentId}/${file.name}`);
+
+              const { error: removeError } = await supabaseClient
+                .storage
+                .from("pec-photos")
+                .remove(filePaths);
+
+              if (removeError) {
+                console.warn("Erreur lors de la suppression des photos du storage:", removeError);
+              } else {
+                console.log(`✅ ${files.length} photo(s) supprimée(s) du storage`);
+              }
+            }
+          } catch (storageErr) {
+            console.warn("Erreur lors de la suppression du storage:", storageErr);
+            // Continue même en cas d'erreur
+          }
+        }
+
+        // 🆕 ÉTAPE 3: Supprimer les entrées de la table photos
+        const { error: photosError } = await supabaseClient
+          .from("photos")
+          .delete()
+          .eq("equipement_id", supabaseEquipmentId);
+
+        if (photosError) {
+          console.warn("Erreur suppression photos de la table:", photosError);
+          // Continue même en cas d'erreur
+        } else {
+          console.log("✅ Entrées photos supprimées de la table");
+        }
+
+        // 🆕 ÉTAPE 4: Supprimer l'équipement
+        const { error } = await supabaseClient
+          .from("equipements")
+          .delete()
+          .eq("code", equipmentToDelete.code);
+
+        if (error) {
+          console.error("Erreur suppression Supabase:", error);
+          showToast('⚠️ Erreur lors de la suppression sur Supabase', 'warning');
+          return false;
+        }
+
+        console.log("✅ Équipement supprimé de Supabase:", equipmentToDelete.code);
+        return true;
+
+      } catch (err) {
+        console.error("Exception deleteEquipmentFromSupabase:", err);
+        return false;
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ÉDITION ÉQUIPEMENT
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function editEquipment(id) {
+      const equipment = AppState.equipmentData[AppState.currentLot]?.find((e) => e.id === id);
+
+      if (!equipment) {
+        showToast('❌ Équipement introuvable', 'error');
+        return;
+      }
+
+      AppState.editingEquipmentId = id;
+
+      applyAdaptiveFormDisplay(AppState.currentLot);
+      populateTypeSelect();
+
+      // Remplir tous les champs standard
+      document.getElementById('formLot').value = equipment.lot || '';
+      document.getElementById('formDate').value = equipment.date || '';
+      document.getElementById('formHeureDebut').value = equipment.heureDebut || '';
+      document.getElementById('formHeureFin').value = equipment.heureFin || '';
+      document.getElementById('formTechnicien').value = equipment.technicien || '';
+      document.getElementById('formEntreprise').value = equipment.entreprise || '';
+      document.getElementById('formContactSite').value = equipment.contactSite || '';
+      document.getElementById('formTelReferent').value = equipment.telReferent || '';
+      document.getElementById('formMeteo').value = equipment.meteo || '';
+      document.getElementById('formTypeVisite').value = equipment.typeVisite || '';
+      document.getElementById('formNiveau').value = equipment.niveau || '';
+      document.getElementById('formLocal').value = equipment.local || '';
+
+      // Type d'équipement
+      const typeSelect = document.getElementById('formType');
+      const typeAutreField = document.getElementById('formTypeAutre');
+      const equipmentType = equipment.type || '';
+
+      let typeExists = false;
+      for (let option of typeSelect.options) {
+        if (option.value === equipmentType) {
+          typeExists = true;
+          break;
+        }
+      }
+
+      if (typeExists) {
+        typeSelect.value = equipmentType;
+        typeAutreField.style.display = 'none';
+        typeAutreField.value = '';
+      } else if (equipmentType) {
+        typeSelect.value = 'Autre';
+        typeAutreField.style.display = 'block';
+        typeAutreField.value = equipmentType;
+      } else {
+        typeSelect.value = '';
+        typeAutreField.style.display = 'none';
+        typeAutreField.value = '';
+      }
+
+      // Déclencher l'affichage des sections spécifiques
+      updateFieldsBasedOnType(equipmentType, AppState.currentLot);
+
+      document.getElementById('formCode').value = equipment.code || '';
+      document.getElementById('formQRCode').value = equipment.qrCode || '';
+      document.getElementById('formRefDOE').value = equipment.refDOE || '';
+      document.getElementById('formRefPlan').value = equipment.refPlan || '';
+
+      // Champs mécaniques
+      if (document.getElementById('formMarque')) document.getElementById('formMarque').value = equipment.marque || '';
+      if (document.getElementById('formModele')) document.getElementById('formModele').value = equipment.modele || '';
+      if (document.getElementById('formSerie')) document.getElementById('formSerie').value = equipment.serie || '';
+      if (document.getElementById('formPuissance')) document.getElementById('formPuissance').value = equipment.puissance || '';
+      if (document.getElementById('formUnite')) document.getElementById('formUnite').value = equipment.unite || '';
+      if (document.getElementById('formAnnee')) document.getElementById('formAnnee').value = equipment.annee || '';
+
+      // 🆕 Champs compteur d'eau
+      if (document.getElementById('formWaterMeterType')) document.getElementById('formWaterMeterType').value = equipment.waterMeterType || '';
+      if (document.getElementById('formWaterMeterSerial')) document.getElementById('formWaterMeterSerial').value = equipment.waterMeterSerial || '';
+      if (document.getElementById('formWaterMeterField')) document.getElementById('formWaterMeterField').value = equipment.waterMeterField || '';
+      if (document.getElementById('formWaterMeterGTB')) document.getElementById('formWaterMeterGTB').value = equipment.waterMeterGTB || '';
+      if (document.getElementById('formWaterMeterDiff')) document.getElementById('formWaterMeterDiff').value = equipment.waterMeterDiff || '';
+      if (document.getElementById('formWaterMeterLastRead')) document.getElementById('formWaterMeterLastRead').value = equipment.waterMeterLastRead || '';
+      if (document.getElementById('formWaterMeterCoherence')) document.getElementById('formWaterMeterCoherence').value = equipment.waterMeterCoherence || '';
+      if (document.getElementById('formWaterMeterObs')) document.getElementById('formWaterMeterObs').value = equipment.waterMeterObs || '';
+
+      // 🆕 Champs débits air
+      if (document.getElementById('formSanitaryType')) document.getElementById('formSanitaryType').value = equipment.sanitaryType || '';
+      if (document.getElementById('formSanitaryLocation')) document.getElementById('formSanitaryLocation').value = equipment.sanitaryLocation || '';
+      if (document.getElementById('formAirFlowMeasured')) document.getElementById('formAirFlowMeasured').value = equipment.airFlowMeasured || '';
+      if (document.getElementById('formAirFlowRegulation')) document.getElementById('formAirFlowRegulation').value = equipment.airFlowRegulation || '';
+      if (document.getElementById('formAirFlowCompliance')) document.getElementById('formAirFlowCompliance').value = equipment.airFlowCompliance || '';
+      if (document.getElementById('formAirFlowVents')) document.getElementById('formAirFlowVents').value = equipment.airFlowVents || '';
+      if (document.getElementById('formAirFlowVentsState')) document.getElementById('formAirFlowVentsState').value = equipment.airFlowVentsState || '';
+      if (document.getElementById('formAirFlowObs')) document.getElementById('formAirFlowObs').value = equipment.airFlowObs || '';
+
+      // 🆕 Champs GTB
+      if (document.getElementById('formGTBSoftware')) document.getElementById('formGTBSoftware').value = equipment.gtbSoftware || '';
+      if (document.getElementById('formGTBVersion')) document.getElementById('formGTBVersion').value = equipment.gtbVersion || '';
+      if (document.getElementById('formGTBPoints')) document.getElementById('formGTBPoints').value = equipment.gtbPoints || '';
+      if (document.getElementById('formGTBPointsFault')) document.getElementById('formGTBPointsFault').value = equipment.gtbPointsFault || '';
+      if (document.getElementById('formGTBAvailability')) document.getElementById('formGTBAvailability').value = equipment.gtbAvailability || '';
+      if (document.getElementById('formGTBLastUpdate')) document.getElementById('formGTBLastUpdate').value = equipment.gtbLastUpdate || '';
+      if (document.getElementById('formGTBAnomalies')) document.getElementById('formGTBAnomalies').value = equipment.gtbAnomalies || '';
+
+      // 🆕 Champs qualité eau
+      if (document.getElementById('formWaterQualityCircuit')) document.getElementById('formWaterQualityCircuit').value = equipment.waterQualityCircuit || '';
+      if (document.getElementById('formWaterQualityPoint')) document.getElementById('formWaterQualityPoint').value = equipment.waterQualityPoint || '';
+      if (document.getElementById('formWaterQualityPH')) document.getElementById('formWaterQualityPH').value = equipment.waterQualityPH || '';
+      if (document.getElementById('formWaterQualityConductivity')) document.getElementById('formWaterQualityConductivity').value = equipment.waterQualityConductivity || '';
+      if (document.getElementById('formWaterQualityTemp')) document.getElementById('formWaterQualityTemp').value = equipment.waterQualityTemp || '';
+      if (document.getElementById('formWaterQualityHardness')) document.getElementById('formWaterQualityHardness').value = equipment.waterQualityHardness || '';
+      if (document.getElementById('formWaterQualityTAC')) document.getElementById('formWaterQualityTAC').value = equipment.waterQualityTAC || '';
+      if (document.getElementById('formWaterQualityTurbidity')) document.getElementById('formWaterQualityTurbidity').value = equipment.waterQualityTurbidity || '';
+      if (document.getElementById('formWaterQualityChlorine')) document.getElementById('formWaterQualityChlorine').value = equipment.waterQualityChlorine || '';
+      if (document.getElementById('formWaterQualityIron')) document.getElementById('formWaterQualityIron').value = equipment.waterQualityIron || '';
+      if (document.getElementById('formWaterQualityTreatment')) document.getElementById('formWaterQualityTreatment').value = equipment.waterQualityTreatment || '';
+      if (document.getElementById('formWaterQualityObs')) document.getElementById('formWaterQualityObs').value = equipment.waterQualityObs || '';
+
+      // État et critères
+      AppState.currentEV = equipment.ev;
+      AppState.currentCRIT = equipment.crit;
+      AppState.currentTYPE = equipment.type_anomalie;
+      AppState.currentBUDGET = equipment.budget;
+
+      // Observations
+      document.getElementById('formConstat').value = equipment.constat || '';
+      document.getElementById('formObservations').value = equipment.observations || '';
+      document.getElementById('formActions').value = equipment.actions || '';
+
+      // Photos
+      AppState.currentPhotos = equipment.photos || [];
+
+      // Croquis
+      AppState.currentCroquis = equipment.croquis || null;
+      initCanvas();
+
+      // Afficher les sélections visuelles
+      document.querySelectorAll('.radio-option').forEach((opt) => {
+        opt.classList.remove('selected');
+        if (opt.dataset.ev !== undefined && parseInt(opt.dataset.ev) === equipment.ev) {
+          opt.classList.add('selected');
+        }
+        if (opt.dataset.crit && opt.dataset.crit === equipment.crit) {
+          opt.classList.add('selected');
+        }
+        if (opt.dataset.type && opt.dataset.type === equipment.type_anomalie) {
+          opt.classList.add('selected');
+        }
+        if (opt.dataset.budget && opt.dataset.budget === equipment.budget) {
+          opt.classList.add('selected');
+        }
+      });
+
+      // Afficher les photos
+      renderPhotoPreview();
+
+      // Recalculer la priorité
+      calculatePriority();
+
+      // Afficher le bouton de suppression
+      document.getElementById('btnDeleteEquipment').style.display = 'inline-block';
+
+      // Afficher le formulaire
+      showScreen('equipmentForm');
+
+      showToast('✏️ Mode édition activé', 'info');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STATUT ONLINE/OFFLINE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function updateOnlineStatus() {
+      const status = document.getElementById('onlineStatus');
+      const banner = document.getElementById('offlineBanner');
+
+      if (navigator.onLine) {
+        status.textContent = '🟢';
+        banner.style.display = 'none';
+      } else {
+        status.textContent = '🔴';
+        banner.style.display = 'block';
+      }
+    }
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // LOCALSTORAGE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function loadFromLocalStorage() {
+      try {
+        const saved = localStorage.getItem('pecTechData');
+        if (saved) {
+          AppState.equipmentData = JSON.parse(saved);
+          console.log('✅ Données chargées:', Object.keys(AppState.equipmentData).length, 'lots');
+        }
+
+        const savedCompletedLots = localStorage.getItem('pecTechCompletedLots');
+        if (savedCompletedLots) {
+          AppState.completedLots = JSON.parse(savedCompletedLots);
+          console.log('✅ Lots terminés chargés:', AppState.completedLots.length);
+        }
+
+        const savedGoogleSheetsUrl = localStorage.getItem('pecTechGoogleSheetsUrl');
+        if (savedGoogleSheetsUrl) {
+          AppState.googleSheetsUrl = savedGoogleSheetsUrl;
+          console.log('✅ URL Google Sheets chargée');
+        }
+
+        const savedGoogleSheetsEnabled = localStorage.getItem('pecTechGoogleSheetsEnabled');
+        if (savedGoogleSheetsEnabled) {
+          AppState.googleSheetsEnabled = savedGoogleSheetsEnabled === 'true';
+          console.log('✅ État Google Sheets:', AppState.googleSheetsEnabled ? 'Activé' : 'Désactivé');
+        }
+
+        const savedFormatRestitution = localStorage.getItem('pecTechFormatRestitution');
+        if (savedFormatRestitution) {
+          AppState.formatRestitution = savedFormatRestitution;
+          console.log('✅ Format restitution chargé:', savedFormatRestitution);
+        }
+
+        const savedCloudUrl = localStorage.getItem('pecTechCloudUrl');
+        if (savedCloudUrl) {
+          AppState.cloudUrl = savedCloudUrl;
+        }
+
+        const savedGmaoLogiciel = localStorage.getItem('pecTechGmaoLogiciel');
+        if (savedGmaoLogiciel) {
+          AppState.gmaoLogiciel = savedGmaoLogiciel;
+        }
+
+        updateGoogleSheetsButton();
+        loadFormatRestitutionPreferences();
+      } catch (e) {
+        console.error('❌ Erreur chargement données:', e);
+      }
+    }
+
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem('pecTechData', JSON.stringify(AppState.equipmentData));
+        localStorage.setItem('pecTechCompletedLots', JSON.stringify(AppState.completedLots));
+        console.log('💾 Données sauvegardées');
+      } catch (e) {
+        console.error('❌ Erreur sauvegarde:', e);
+      }
+    }
+
+    function startAutoSave() {
+      setInterval(() => {
+        saveToLocalStorage();
+      }, 30000);
+    }
+
+    function clearAllData() {
+      if (confirm('⚠️ ATTENTION : Cette action va supprimer TOUTES les données. Continuer ?')) {
+        AppState.equipmentData = {};
+        AppState.completedLots = [];
+        AppState.journalVisite = { incidents: '', zonesNonVisitees: '', pointsARevoir: '' };
+        AppState.syntheseTerrain = { forces: '', faiblesses: '', priorites: '', recommandations: '' };
+        localStorage.removeItem('pecTechData');
+        localStorage.removeItem('pecTechCompletedLots');
+        localStorage.removeItem('pecTechJournal');
+        localStorage.removeItem('pecTechSynthese');
+        showToast('🗑️ Toutes les données ont été effacées', 'warning');
+        renderDashboard();
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // JOURNAL DE VISITE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function loadJournalVisite() {
+      const saved = localStorage.getItem('pecTechJournal');
+      if (saved) {
+        AppState.journalVisite = JSON.parse(saved);
+      }
+      document.getElementById('journalIncidents').value = AppState.journalVisite.incidents || '';
+      document.getElementById('journalZonesNonVisitees').value = AppState.journalVisite.zonesNonVisitees || '';
+      document.getElementById('journalPointsARevoir').value = AppState.journalVisite.pointsARevoir || '';
+    }
+
+    function saveJournalVisite() {
+      AppState.journalVisite = {
+        incidents: document.getElementById('journalIncidents').value,
+        zonesNonVisitees: document.getElementById('journalZonesNonVisitees').value,
+        pointsARevoir: document.getElementById('journalPointsARevoir').value
+      };
+      localStorage.setItem('pecTechJournal', JSON.stringify(AppState.journalVisite));
+      showToast('✅ Journal de visite sauvegardé', 'success');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SYNTHÈSE TERRAIN
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function loadSyntheseTerrain() {
+      const saved = localStorage.getItem('pecTechSynthese');
+      if (saved) {
+        AppState.syntheseTerrain = JSON.parse(saved);
+      }
+      document.getElementById('syntheseForces').value = AppState.syntheseTerrain.forces || '';
+      document.getElementById('syntheseFaiblesses').value = AppState.syntheseTerrain.faiblesses || '';
+      document.getElementById('synthesePriorites').value = AppState.syntheseTerrain.priorites || '';
+      document.getElementById('syntheseRecommandations').value = AppState.syntheseTerrain.recommandations || '';
+    }
+
+    function saveSyntheseTerrain() {
+      AppState.syntheseTerrain = {
+        forces: document.getElementById('syntheseForces').value,
+        faiblesses: document.getElementById('syntheseFaiblesses').value,
+        priorites: document.getElementById('synthesePriorites').value,
+        recommandations: document.getElementById('syntheseRecommandations').value
+      };
+      localStorage.setItem('pecTechSynthese', JSON.stringify(AppState.syntheseTerrain));
+      showToast('✅ Synthèse terrain sauvegardée', 'success');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SCORE DE SANTÉ GLOBAL PAR LOT
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function renderScoreSanteLots() {
+      const container = document.getElementById('scoresSanteLots');
+
+      let html = `
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <thead>
+          <tr style="background: #2c5aa0; color: white;">
+            <th style="padding: 12px; text-align: left;">Lot Technique</th>
+            <th style="padding: 12px; text-align: center;">Nb Équipements</th>
+            <th style="padding: 12px; text-align: center;">Score Moyen EV</th>
+            <th style="padding: 12px; text-align: center;">Interprétation</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+      let totalScore = 0;
+      let totalEquipments = 0;
+
+      LOTS_TECHNIQUES.forEach(lot => {
+        const equipments = AppState.equipmentData[lot] || [];
+        const nbEquipments = equipments.length;
+
+        if (nbEquipments > 0) {
+          const sumEV = equipments.reduce((sum, eq) => sum + (eq.ev !== undefined ? eq.ev : 0), 0);
+          const avgEV = (sumEV / nbEquipments).toFixed(1);
+          totalScore += parseFloat(avgEV) * nbEquipments;
+          totalEquipments += nbEquipments;
+
+          let interpretation = '';
+          let color = '';
+          if (avgEV <= 1) {
+            interpretation = '🟢 Excellent';
+            color = '#28a745';
+          } else if (avgEV <= 2) {
+            interpretation = '🟡 Bon';
+            color = '#ffc107';
+          } else if (avgEV <= 3) {
+            interpretation = '🟠 Moyen';
+            color = '#fd7e14';
+          } else {
+            interpretation = '🔴 Critique';
+            color = '#dc3545';
+          }
+
+          html += `
+          <tr style="border-bottom: 1px solid #dee2e6;">
+            <td style="padding: 12px;">${lot}</td>
+            <td style="padding: 12px; text-align: center;">${nbEquipments}</td>
+            <td style="padding: 12px; text-align: center; font-weight: bold;">${avgEV}</td>
+            <td style="padding: 12px; text-align: center; color: ${color}; font-weight: bold;">${interpretation}</td>
+          </tr>
+        `;
+        }
+      });
+
+      const globalScore = totalEquipments > 0 ? (totalScore / totalEquipments).toFixed(1) : '-';
+      let globalInterpretation = '';
+      let globalColor = '';
+
+      if (globalScore !== '-') {
+        if (globalScore <= 1) {
+          globalInterpretation = '🟢 Excellent';
+          globalColor = '#28a745';
+        } else if (globalScore <= 2) {
+          globalInterpretation = '🟡 Bon';
+          globalColor = '#ffc107';
+        } else if (globalScore <= 3) {
+          globalInterpretation = '🟠 Moyen';
+          globalColor = '#fd7e14';
+        } else {
+          globalInterpretation = '🔴 Critique';
+          globalColor = '#dc3545';
+        }
+      }
+
+      html += `
+          <tr style="background: #f8f9fa; font-weight: bold; font-size: 1.1em;">
+            <td style="padding: 15px;">SCORE GLOBAL BÂTIMENT</td>
+            <td style="padding: 15px; text-align: center;">${totalEquipments}</td>
+            <td style="padding: 15px; text-align: center;">${globalScore}</td>
+            <td style="padding: 15px; text-align: center; color: ${globalColor};">${globalInterpretation}</td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+
+      container.innerHTML = html;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // INDICATEURS DE PERFORMANCE (KPIs)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function renderKPIs() {
+      const container = document.getElementById('kpisContainer');
+
+      let totalEquipments = 0;
+      let totalPhotos = 0;
+      let anomaliesU = 0, anomaliesI = 0, anomaliesA = 0, anomaliesS = 0;
+      let budgetTotal = 0;
+
+      LOTS_TECHNIQUES.forEach(lot => {
+        const equipments = AppState.equipmentData[lot] || [];
+        totalEquipments += equipments.length;
+
+        equipments.forEach(eq => {
+          if (eq.photos) totalPhotos += eq.photos.length;
+
+          if (eq.crit === 'U') anomaliesU++;
+          else if (eq.crit === 'I') anomaliesI++;
+          else if (eq.crit === 'A') anomaliesA++;
+          else if (eq.crit === 'S') anomaliesS++;
+
+          if (eq.budget === 'A') budgetTotal += 250;
+          else if (eq.budget === 'B') budgetTotal += 1250;
+          else if (eq.budget === 'C') budgetTotal += 6000;
+          else if (eq.budget === 'D') budgetTotal += 30000;
+          else if (eq.budget === 'E') budgetTotal += 75000;
+        });
+      });
+
+      const lotsWithData = Object.keys(AppState.equipmentData).filter(lot => AppState.equipmentData[lot].length > 0).length;
+      const couverture = Math.round((lotsWithData / LOTS_TECHNIQUES.length) * 100);
+
+      let html = `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 20px 0;">
+        
+        <div style="background: white; border: 2px solid #dee2e6; border-radius: 8px; padding: 20px; text-align: center;">
+          <h3 style="color: #2c5aa0; margin-bottom: 10px;">📊 Couverture</h3>
+          <div style="font-size: 36px; font-weight: bold; color: #28a745;">${couverture}%</div>
+          <p style="color: #6c757d; margin-top: 10px;">${lotsWithData} / ${LOTS_TECHNIQUES.length} lots audités</p>
+        </div>
+        
+        <div style="background: white; border: 2px solid #dee2e6; border-radius: 8px; padding: 20px; text-align: center;">
+          <h3 style="color: #2c5aa0; margin-bottom: 10px;">🔧 Équipements</h3>
+          <div style="font-size: 36px; font-weight: bold; color: #007bff;">${totalEquipments}</div>
+          <p style="color: #6c757d; margin-top: 10px;">fiches créées</p>
+        </div>
+        
+        <div style="background: white; border: 2px solid #dee2e6; border-radius: 8px; padding: 20px; text-align: center;">
+          <h3 style="color: #2c5aa0; margin-bottom: 10px;">📸 Photos</h3>
+          <div style="font-size: 36px; font-weight: bold; color: #6c757d;">${totalPhotos}</div>
+          <p style="color: #6c757d; margin-top: 10px;">prises terrain</p>
+        </div>
+        
+        <div style="background: white; border: 2px solid #dee2e6; border-radius: 8px; padding: 20px; text-align: center;">
+          <h3 style="color: #2c5aa0; margin-bottom: 10px;">💰 Budget Estimé</h3>
+          <div style="font-size: 28px; font-weight: bold; color: #dc3545;">${Math.round(budgetTotal).toLocaleString()}€</div>
+          <p style="color: #6c757d; margin-top: 10px;">Interventions totales</p>
+</div>
+</div>
+      
+      <h3 style="color: #333; margin: 30px 0 15px 0;">⚠️ Anomalies par Criticité</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+        <div style="background: #dc3545; color: white; padding: 15px; border-radius: 8px; text-align: center;">
+          <div style="font-size: 32px; font-weight: bold;">${anomaliesU}</div>
+          <div>🔴 URGENT</div>
+        </div>
+        <div style="background: #fd7e14; color: white; padding: 15px; border-radius: 8px; text-align: center;">
+          <div style="font-size: 32px; font-weight: bold;">${anomaliesI}</div>
+          <div>🟠 IMPORTANT</div>
+        </div>
+        <div style="background: #ffc107; color: #212529; padding: 15px; border-radius: 8px; text-align: center;">
+          <div style="font-size: 32px; font-weight: bold;">${anomaliesA}</div>
+          <div>🟡 AMÉLIORATION</div>
+        </div>
+        <div style="background: #28a745; color: white; padding: 15px; border-radius: 8px; text-align: center;">
+          <div style="font-size: 32px; font-weight: bold;">${anomaliesS}</div>
+          <div>🟢 SUIVI</div>
+        </div>
+      </div>
+    `;
+
+      container.innerHTML = html;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // EXPORTS FONCTIONNELS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function exportCSVAndPhotos() {
+      showToast('📄 Génération CSV + Photos en cours...', 'info');
+
+      const csvContent = generateCSV();
+      downloadFile(csvContent, `PEC_LaDefense_releves_${getTodayDateString()}.csv`, 'text/csv');
+
+      setTimeout(() => {
+        generatePhotoZIP();
+      }, 500);
+    }
+
+    function generateCSV() {
+      const headers = [
+        'Lot', 'Type', 'Code', 'QR Code', 'Ref DOE', 'Ref Plan',
+        'Date', 'Technicien', 'Niveau', 'Local',
+        'Marque', 'Modèle', 'Série', 'Puissance', 'Unité', 'Année',
+        'EV', 'CRIT', 'Type Anomalie', 'Budget', 'Priorité',
+        'Constat', 'Observations', 'Actions', 'Photos', 'Timestamp',
+        // 🆕 Nouveaux champs
+        'Compteur Type', 'Compteur Série', 'Index Terrain', 'Index GTB', 'Écart', 'Cohérence',
+        'Sanitaire Type', 'Débit Mesuré', 'Débit Réglem', 'Conformité',
+        'GTB Logiciel', 'GTB Points', 'GTB Défauts',
+        'Eau Circuit', 'pH', 'Conductivité', 'Dureté'
+      ];
+
+      let csv = headers.join(';') + '\n';
+
+      LOTS_TECHNIQUES.forEach(lot => {
+        const equipments = AppState.equipmentData[lot] || [];
+        equipments.forEach(eq => {
+          const evLabels = ['Critique', 'Mauvais', 'Moyen', 'Bon', 'Neuf'];
+          const photoNames = (eq.photos || []).map(p => p.name).join(', ');
+
+          const row = [
+            escapeCSV(lot),
+            escapeCSV(eq.type || ''),
+            escapeCSV(eq.code || ''),
+            escapeCSV(eq.qrCode || ''),
+            escapeCSV(eq.refDOE || ''),
+            escapeCSV(eq.refPlan || ''),
+            escapeCSV(eq.date || ''),
+            escapeCSV(eq.technicien || ''),
+            escapeCSV(eq.niveau || ''),
+            escapeCSV(eq.local || ''),
+            escapeCSV(eq.marque || ''),
+            escapeCSV(eq.modele || ''),
+            escapeCSV(eq.serie || ''),
+            escapeCSV(eq.puissance || ''),
+            escapeCSV(eq.unite || ''),
+            escapeCSV(eq.annee || ''),
+            eq.ev !== null ? evLabels[eq.ev] : '',
+            escapeCSV(eq.crit || ''),
+            escapeCSV(eq.type_anomalie || ''),
+            escapeCSV(eq.budget || ''),
+            escapeCSV(eq.priorite || ''),
+            escapeCSV(eq.constat || ''),
+            escapeCSV(eq.observations || ''),
+            escapeCSV(eq.actions || ''),
+            escapeCSV(photoNames),
+            escapeCSV(eq.timestamp || ''),
+            // 🆕 Nouveaux champs
+            escapeCSV(eq.waterMeterType || ''),
+            escapeCSV(eq.waterMeterSerial || ''),
+            escapeCSV(eq.waterMeterField || ''),
+            escapeCSV(eq.waterMeterGTB || ''),
+            escapeCSV(eq.waterMeterDiff || ''),
+            escapeCSV(eq.waterMeterCoherence || ''),
+            escapeCSV(eq.sanitaryType || ''),
+            escapeCSV(eq.airFlowMeasured || ''),
+            escapeCSV(eq.airFlowRegulation || ''),
+            escapeCSV(eq.airFlowCompliance || ''),
+            escapeCSV(eq.gtbSoftware || ''),
+            escapeCSV(eq.gtbPoints || ''),
+            escapeCSV(eq.gtbPointsFault || ''),
+            escapeCSV(eq.waterQualityCircuit || ''),
+            escapeCSV(eq.waterQualityPH || ''),
+            escapeCSV(eq.waterQualityConductivity || ''),
+            escapeCSV(eq.waterQualityHardness || '')
+          ];
+
+          csv += row.join(';') + '\n';
+        });
+      });
+
+      return csv;
+    }
+
+    function escapeCSV(str) {
+      if (str === null || str === undefined) return '';
+      str = String(str);
+      if (str.includes(';') || str.includes('"') || str.includes('\n')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    }
+
+    function generatePhotoZIP() {
+      showToast('📦 Préparation du ZIP des photos...', 'info');
+
+      let photoList = '=== PHOTOS PEC LA DÉFENSE ===\n\n';
+      let totalPhotos = 0;
+
+      LOTS_TECHNIQUES.forEach(lot => {
+        const equipments = AppState.equipmentData[lot] || [];
+        if (equipments.length > 0) {
+          photoList += `\n📁 LOT: ${lot}\n`;
+          photoList += '─'.repeat(50) + '\n';
+
+          equipments.forEach(eq => {
+            if (eq.photos && eq.photos.length > 0) {
+              photoList += `\n  Équipement: ${eq.type} (${eq.code})\n`;
+              eq.photos.forEach((photo, index) => {
+                photoList += `    📷 ${eq.code}_photo${index + 1}.jpg (${(photo.size / 1024).toFixed(0)} Ko)\n`;
+                totalPhotos++;
+              });
+            }
+          });
+        }
+      });
+
+      photoList += `\n\n✅ Total: ${totalPhotos} photo(s)\n`;
+      photoList += `\nNOTE: Les photos sont sauvegardées dans l'application.\n`;
+      photoList += `Pour exporter les photos réelles, utilisez l'export JSON complet.\n`;
+
+      downloadFile(photoList, `PEC_LaDefense_photos_liste_${getTodayDateString()}.txt`, 'text/plain');
+
+      showToast(`✅ CSV + Liste photos exportés (${totalPhotos} photos)`, 'success');
+    }
+
+    function exportJSON() {
+      showToast('💾 Génération JSON complet en cours...', 'info');
+
+      const jsonData = {
+        projet: 'PEC La Défense - 21 000 m²',
+        dateExport: new Date().toISOString(),
+        version: '1.0',
+        nbLots: LOTS_TECHNIQUES.length,
+        nbEquipements: Object.values(AppState.equipmentData).reduce((sum, arr) => sum + arr.length, 0),
+        donnees: AppState.equipmentData
+      };
+
+      const jsonString = JSON.stringify(jsonData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `PEC_LaDefense_backup_complet_${getTodayDateString()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast('✅ Backup JSON complet exporté (avec photos)', 'success');
+    }
+
+    function downloadFile(content, filename, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function getTodayDateString() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // IMPORT JSON (RESTAURATION DONNÉES)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function handleJSONImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (!file.name.toLowerCase().endsWith('.json') && file.type !== 'application/json') {
+        showToast('❌ Erreur : fichier JSON requis (.json)', 'error');
+        event.target.value = '';
+        return;
+      }
+
+      const currentDataExists = Object.keys(AppState.equipmentData).length > 0;
+      if (currentDataExists) {
+        const confirm = window.confirm(
+          '⚠️ ATTENTION !\n\n' +
+          'Cette action va ÉCRASER toutes les données actuelles.\n\n' +
+          'Voulez-vous continuer ?'
+        );
+        if (!confirm) {
+          event.target.value = '';
+          return;
+        }
+      }
+
+      showToast('📥 Import en cours...', 'info');
+
+      const reader = new FileReader();
+
+      reader.onload = function (e) {
+        try {
+          const jsonData = JSON.parse(e.target.result);
+
+          if (!jsonData.donnees) {
+            throw new Error('Format JSON invalide : "donnees" manquant');
+          }
+
+          const importedLots = Object.keys(jsonData.donnees);
+          const invalidLots = importedLots.filter(lot => !LOTS_TECHNIQUES.includes(lot));
+
+          if (invalidLots.length > 0) {
+            console.warn('⚠️ Lots non reconnus ignorés:', invalidLots);
+          }
+
+          AppState.equipmentData = jsonData.donnees;
+
+          saveToLocalStorage();
+
+          renderDashboard();
+
+          let totalEquipments = 0;
+          let totalPhotos = 0;
+          Object.values(AppState.equipmentData).forEach(equipments => {
+            totalEquipments += equipments.length;
+            equipments.forEach(eq => {
+              if (eq.photos) totalPhotos += eq.photos.length;
+            });
+          });
+
+          showToast(
+            `✅ Import réussi ! ${totalEquipments} équipement(s) + ${totalPhotos} photo(s) restaurés`,
+            'success'
+          );
+
+          setTimeout(() => {
+            alert(
+              '✅ IMPORT RÉUSSI !\n\n' +
+              `📦 Projet : ${jsonData.projet || 'N/A'}\n` +
+              `📅 Date export : ${jsonData.dateExport ? new Date(jsonData.dateExport).toLocaleString('fr-FR') : 'N/A'}\n` +
+              `🔢 Version : ${jsonData.version || 'N/A'}\n\n` +
+              `📊 DONNÉES RESTAURÉES :\n` +
+              `   • ${totalEquipments} équipement(s)\n` +
+              `   • ${totalPhotos} photo(s)\n` +
+              `   • ${Object.keys(AppState.equipmentData).length} lot(s)\n\n` +
+              `💾 Les données ont été sauvegardées automatiquement.`
+            );
+          }, 1000);
+
+        } catch (error) {
+          console.error('❌ Erreur import JSON:', error);
+          showToast('❌ Erreur : fichier JSON invalide ou corrompu', 'error');
+          alert(
+            '❌ ERREUR D\'IMPORT\n\n' +
+            'Le fichier JSON semble invalide ou corrompu.\n\n' +
+            'Détails techniques :\n' + error.message
+          );
+        } finally {
+          event.target.value = '';
+        }
+      };
+
+      reader.onerror = function () {
+        showToast('❌ Erreur de lecture du fichier', 'error');
+        event.target.value = '';
+      };
+
+      reader.readAsText(file);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FORMAT DE RESTITUTION (NOUVEAU)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function loadFormatRestitutionPreferences() {
+      const formatSelect = document.getElementById('formatRestitution');
+      const cloudUrlInput = document.getElementById('cloudUrl');
+      const gmaoLogicielInput = document.getElementById('gmaoLogiciel');
+      const cloudGroup = document.getElementById('cloudUrlGroup');
+      const gmaoGroup = document.getElementById('gmaoLogicielGroup');
+
+      if (formatSelect) {
+        formatSelect.value = AppState.formatRestitution || 'csv';
+
+        if (formatSelect.value === 'cloud') {
+          cloudGroup.style.display = 'block';
+          if (cloudUrlInput) cloudUrlInput.value = AppState.cloudUrl || '';
+        } else if (formatSelect.value === 'gmao') {
+          gmaoGroup.style.display = 'block';
+          if (gmaoLogicielInput) gmaoLogicielInput.value = AppState.gmaoLogiciel || '';
+        }
+      }
+    }
+
+    function saveFormatRestitution() {
+      const formatSelect = document.getElementById('formatRestitution');
+      const cloudUrlInput = document.getElementById('cloudUrl');
+      const gmaoLogicielInput = document.getElementById('gmaoLogiciel');
+
+      if (!formatSelect) return;
+
+      AppState.formatRestitution = formatSelect.value;
+      AppState.cloudUrl = cloudUrlInput?.value || '';
+      AppState.gmaoLogiciel = gmaoLogicielInput?.value || '';
+
+      localStorage.setItem('pecTechFormatRestitution', AppState.formatRestitution);
+      localStorage.setItem('pecTechCloudUrl', AppState.cloudUrl);
+      localStorage.setItem('pecTechGmaoLogiciel', AppState.gmaoLogiciel);
+
+      const formatLabels = {
+        'csv': '📄 Excel avec photos (CSV)',
+        'json': '💾 JSON complet',
+        'pdf': '📑 PDF avec hyperliens',
+        'gmao': '🔧 Import GMAO',
+        'bim': '🏗️ Format BIM/IFC',
+        'cloud': '☁️ Plateforme collaborative'
+      };
+
+      let message = `✅ Format de restitution enregistré : ${formatLabels[AppState.formatRestitution]}`;
+
+      if (AppState.formatRestitution === 'cloud' && AppState.cloudUrl) {
+        message += `\nURL : ${AppState.cloudUrl}`;
+      } else if (AppState.formatRestitution === 'gmao' && AppState.gmaoLogiciel) {
+        message += `\nLogiciel : ${AppState.gmaoLogiciel}`;
+      }
+
+      showToast('✅ Préférence enregistrée avec succès', 'success');
+
+      console.log('💾 Format restitution sauvegardé:', {
+        format: AppState.formatRestitution,
+        cloudUrl: AppState.cloudUrl,
+        gmaoLogiciel: AppState.gmaoLogiciel
+      });
+    }
+
+  </script>
+</body>
+
+</html>
